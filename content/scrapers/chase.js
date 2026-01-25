@@ -1,10 +1,12 @@
 // Chase Offers Scraper
-// Updated for Chase's commerce-tile based UI
+// Based on proven approach from https://github.com/s-money-git/Chase-Add-Offers
 
 const ChaseScraper = {
   source: 'chase',
   offersUrl: 'https://secure.chase.com/web/auth/dashboard#/dashboard/merchantOffers/offer-hub',
   debug: true,
+  originalUrl: null, // Store original URL for navigation back
+  isRunning: false,
 
   log(...args) {
     if (this.debug) {
@@ -33,8 +35,9 @@ const ChaseScraper = {
     this.log('Starting Chase scrape...');
     this.log('Current URL:', window.location.href);
 
-    // Store the offers page URL for returning after clicks
-    this.offersPageUrl = window.location.href;
+    // Store the original URL for reliable navigation back
+    this.originalUrl = window.location.href;
+    this.isRunning = true;
 
     // Wait for page to load
     await this.wait(2000);
@@ -44,11 +47,10 @@ const ChaseScraper = {
 
     // Collect offers from the page (first pass - get all offer data)
     const offers = this.collectOffers();
-    this.log('Collected', offers.length, 'offers');
+    this.log('Collected', offers.length, 'offers to display');
 
-    // Auto opt-in by clicking + buttons
-    // After each click, Chase navigates away - we immediately go back
-    const added = await this.optInToOffers();
+    // Auto opt-in by clicking + buttons (using proven click-and-return method)
+    const added = await this.clickAndReturn();
 
     // Clean offers for storage (remove any DOM references)
     const cleaned = offers.map(offer => ({
@@ -64,140 +66,87 @@ const ChaseScraper = {
     return { offers: cleaned, added, totalFound: cleaned.length };
   },
 
-  // Opt-in to offers by clicking + buttons
-  async optInToOffers() {
-    let added = 0;
-    const maxAttempts = 100; // Safety limit
-    let attempts = 0;
-    const clickedIds = new Set(); // Track which offers we've clicked
+  // Click and return method (based on proven GitHub repo approach)
+  async clickAndReturn(attempts = 0) {
+    if (!this.isRunning) {
+      this.log('Stopped');
+      return 0;
+    }
 
-    while (attempts < maxAttempts) {
-      attempts++;
+    // Find available buttons
+    const buttons = document.querySelectorAll('[data-cy="commerce-tile-button"], [data-testid="commerce-tile-button"]');
 
-      // Find all + buttons that haven't been clicked yet
-      const addButtons = document.querySelectorAll('[data-testid="commerce-tile-button"], [data-cy="commerce-tile-button"]');
-      this.log(`Attempt ${attempts}: Found ${addButtons.length} add buttons`);
-
-      let clickedOne = false;
-
-      for (const btn of addButtons) {
-        // Get the parent tile to find its ID
-        const tile = btn.closest('[data-testid="commerce-tile"], [data-cy="commerce-tile"]');
-        if (!tile) continue;
-
-        const tileId = tile.id || tile.getAttribute('aria-label') || '';
-
-        // Skip if already clicked
-        if (clickedIds.has(tileId)) continue;
-
-        // Check if this offer is already activated (look for visual indicators)
-        const isActivated = this.isOfferActivated(tile);
-        if (isActivated) {
-          this.log(`Skipping ${tileId}: already activated`);
-          clickedIds.add(tileId);
-          continue;
-        }
-
-        try {
-          this.log(`Clicking offer: ${tileId}`);
-
-          // Find the actual clickable element
-          // The data-testid is on SVG, so we need to find clickable parent or the tile itself
-          let clickTarget = btn.closest('div[role="button"], button, a') || btn.parentElement || tile;
-
-          // Scroll into view
-          clickTarget.scrollIntoView({ behavior: 'instant', block: 'center' });
-          await this.wait(100);
-
-          // Dispatch a proper click event (works on any element including SVG parents)
-          const clickEvent = new MouseEvent('click', {
-            bubbles: true,
-            cancelable: true,
-            view: window
-          });
-          clickTarget.dispatchEvent(clickEvent);
-          clickedIds.add(tileId);
-          added++;
-          clickedOne = true;
-
-          // Wait briefly for the opt-in to register
-          await this.wait(500);
-
-          // Check if we navigated away (URL changed to offer-activated)
-          if (window.location.href.includes('offer-activated')) {
-            this.log('Navigated to confirmation page, going back...');
-
-            // Go back to offers page
-            window.history.back();
-
-            // Wait for offers to reload
-            await this.waitForOffers(5000);
-
-            // If still not on offers page, force navigate
-            if (!window.location.href.includes('offer-hub') && !window.location.href.includes('merchantOffers')) {
-              this.log('Forcing navigation back to offers page');
-              window.location.href = this.offersPageUrl;
-              await this.waitForOffers(5000);
-            }
-          }
-
-          // Wait for page to stabilize before next click
-          await this.wait(500);
-
-          // Break to re-query DOM (elements may have changed)
-          break;
-
-        } catch (err) {
-          this.log('Error clicking button:', err.message);
-        }
-      }
-
-      // If we didn't click anything this round, we're done
-      if (!clickedOne) {
-        this.log('No more buttons to click');
-        break;
+    if (buttons.length === 0) {
+      if (attempts < 3) {
+        this.log(`No buttons detected. Retrying (${attempts + 1}/3)...`);
+        await this.wait(2000);
+        return this.clickAndReturn(attempts + 1);
+      } else {
+        this.log('All offers added! (or no more found)');
+        return 0;
       }
     }
 
-    this.log(`Opted in to ${added} offers`);
-    return added;
+    const offersLeft = buttons.length;
+    this.log(`Offers remaining: ${offersLeft}`);
+
+    // Click the first button
+    const button = buttons[0];
+    const tile = button.closest('[data-testid="commerce-tile"], [data-cy="commerce-tile"]');
+    const offerName = tile ? (tile.getAttribute('aria-label') || 'Unknown').split(' ').slice(4, -3).join(' ') : 'Unknown';
+
+    this.log(`Clicking offer: ${offerName}`);
+
+    try {
+      // Try direct click first
+      if (button && typeof button.click === 'function') {
+        button.click();
+      } else {
+        // Fallback: dispatch click event
+        this.log('Using fallback click method');
+        const clickEvent = new MouseEvent('click', {
+          view: window,
+          bubbles: true,
+          cancelable: true
+        });
+        button.dispatchEvent(clickEvent);
+      }
+    } catch (error) {
+      this.log('Error clicking button:', error);
+      // If click fails, retry
+      if (attempts < 3) {
+        this.log(`Click failed. Retrying (${attempts + 1}/3)...`);
+        await this.wait(1000);
+        return this.clickAndReturn(attempts + 1);
+      }
+      return 0;
+    }
+
+    // Wait for navigation to confirmation page (randomized delay 800-1300ms)
+    const backDelay = Math.floor(Math.random() * 500) + 800;
+    await this.wait(backDelay);
+
+    // Navigate back to original offers page
+    this.log('Returning to offers page...');
+    window.location.href = this.originalUrl;
+
+    // Wait for page to reload (randomized delay 800-1300ms)
+    const reloadDelay = Math.floor(Math.random() * 500) + 800;
+    await this.wait(reloadDelay);
+
+    // Continue to next offer if still running
+    if (this.isRunning) {
+      const added = await this.clickAndReturn(0);
+      return added + 1; // Count this one plus any subsequent ones
+    }
+
+    return 1; // Just this one
   },
 
-  // Check if an offer is already activated
-  isOfferActivated(tile) {
-    if (!tile) return false;
-
-    // Check aria-label for "added" or "activated" indicators
-    const ariaLabel = (tile.getAttribute('aria-label') || '').toLowerCase();
-    if (ariaLabel.includes('added') || ariaLabel.includes('activated') || ariaLabel.includes('saved')) {
-      return true;
-    }
-
-    // Check for checkmark icon or "Added" text
-    const tileText = (tile.textContent || '').toLowerCase();
-    if (tileText.includes('added to card') || tileText.includes('offer saved')) {
-      return true;
-    }
-
-    // Check for visual state change (button might change to checkmark)
-    const btn = tile.querySelector('[data-testid="commerce-tile-button"], [data-cy="commerce-tile-button"]');
-    if (btn) {
-      const btnSvg = btn.querySelector('svg');
-      if (btnSvg) {
-        // Check if SVG is a checkmark (different path than +)
-        const path = btnSvg.querySelector('path');
-        if (path) {
-          const d = path.getAttribute('d') || '';
-          // + icon has "M17" in path, checkmark typically has different pattern
-          if (!d.includes('M17') && !d.includes('h-2') && d.includes('l') || d.includes('L')) {
-            // Likely a checkmark
-            return true;
-          }
-        }
-      }
-    }
-
-    return false;
+  // Stop the scraping process
+  stop() {
+    this.isRunning = false;
+    this.log('Scraping stopped by user');
   },
 
   // Scroll to load all lazy-loaded offers
