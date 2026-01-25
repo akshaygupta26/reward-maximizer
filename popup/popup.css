@@ -1,0 +1,468 @@
+/* Reward Maximizer Popup Styles */
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  width: 380px;
+  min-height: 400px;
+  max-height: 600px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-size: 13px;
+  background-color: #f8fafc;
+  color: #1e293b;
+  overflow-x: hidden;
+}
+
+/* Header */
+.header {
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  color: white;
+  padding: 16px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.header-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.header h1 {
+  font-size: 16px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.header-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.icon-btn {
+  background: rgba(255,255,255,0.15);
+  border: none;
+  color: white;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+}
+
+.icon-btn:hover {
+  background: rgba(255,255,255,0.25);
+}
+
+/* Sync Buttons */
+.sync-bar {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.sync-btn {
+  padding: 6px 10px;
+  font-size: 11px;
+  font-weight: 500;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.sync-btn.amex { background: #006FCF; color: white; }
+.sync-btn.chase { background: #117ACA; color: white; }
+.sync-btn.citi { background: #003B70; color: white; }
+.sync-btn.capital-one { background: #D03027; color: white; }
+.sync-btn.discover { background: #FF6600; color: white; }
+.sync-btn.bofa { background: #012169; color: white; }
+.sync-btn.usbank { background: #0C2340; color: white; }
+.sync-btn.rakuten { background: #BF0000; color: white; }
+
+.sync-btn:hover {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+}
+
+.sync-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.sync-btn.active {
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+/* Search and Filter Bar */
+.search-filter {
+  padding: 12px 16px;
+  background: white;
+  border-bottom: 1px solid #e2e8f0;
+  position: sticky;
+  top: 80px;
+  z-index: 90;
+}
+
+.search-box {
+  display: flex;
+  align-items: center;
+  background: #f1f5f9;
+  border-radius: 8px;
+  padding: 8px 12px;
+  margin-bottom: 8px;
+}
+
+.search-box input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  font-size: 13px;
+  outline: none;
+  color: #1e293b;
+}
+
+.search-box input::placeholder {
+  color: #94a3b8;
+}
+
+.filter-chips {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.filter-chips::-webkit-scrollbar {
+  height: 4px;
+}
+
+.filter-chips::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 2px;
+}
+
+.filter-chip {
+  padding: 4px 10px;
+  font-size: 11px;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  background: white;
+  color: #64748b;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s;
+}
+
+.filter-chip:hover {
+  border-color: #2563eb;
+  color: #2563eb;
+}
+
+.filter-chip.active {
+  background: #2563eb;
+  border-color: #2563eb;
+  color: white;
+}
+
+/* Status Bar */
+.status-bar {
+  padding: 8px 16px;
+  background: #f1f5f9;
+  font-size: 12px;
+  color: #64748b;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.status-bar.success {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.status-bar.error {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+/* Offers List */
+.offers-container {
+  padding: 12px 16px;
+  overflow-y: auto;
+  max-height: calc(600px - 200px);
+}
+
+.empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  color: #94a3b8;
+}
+
+.empty-state-icon {
+  font-size: 48px;
+  margin-bottom: 12px;
+}
+
+.empty-state h3 {
+  font-size: 14px;
+  color: #64748b;
+  margin-bottom: 4px;
+}
+
+.empty-state p {
+  font-size: 12px;
+}
+
+/* Merchant Card */
+.merchant-card {
+  background: white;
+  border-radius: 10px;
+  margin-bottom: 12px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+}
+
+.merchant-header {
+  padding: 12px;
+  border-bottom: 1px solid #f1f5f9;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.merchant-name {
+  font-weight: 600;
+  font-size: 14px;
+  color: #1e293b;
+}
+
+.merchant-category {
+  font-size: 10px;
+  padding: 2px 8px;
+  background: #f1f5f9;
+  border-radius: 10px;
+  color: #64748b;
+}
+
+.merchant-offers {
+  padding: 8px 12px;
+}
+
+.offer-row {
+  display: flex;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid #f8fafc;
+}
+
+.offer-row:last-child {
+  border-bottom: none;
+}
+
+.offer-source {
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 500;
+  min-width: 50px;
+  text-align: center;
+}
+
+.offer-source.amex { background: #dbeafe; color: #1d4ed8; }
+.offer-source.chase { background: #dcfce7; color: #166534; }
+.offer-source.citi { background: #e0e7ff; color: #4338ca; }
+.offer-source.capital-one { background: #fee2e2; color: #991b1b; }
+.offer-source.discover { background: #ffedd5; color: #c2410c; }
+.offer-source.bofa { background: #dbeafe; color: #1e40af; }
+.offer-source.usbank { background: #f3f4f6; color: #374151; }
+.offer-source.rakuten { background: #fce7f3; color: #be185d; }
+
+.offer-value {
+  flex: 1;
+  margin-left: 10px;
+  font-weight: 500;
+  color: #059669;
+}
+
+.offer-cpp {
+  font-size: 11px;
+  color: #64748b;
+  margin-left: 8px;
+}
+
+.best-badge {
+  font-size: 9px;
+  background: #fef3c7;
+  color: #b45309;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 600;
+  margin-left: 8px;
+}
+
+.stacking-badge {
+  font-size: 9px;
+  background: #dcfce7;
+  color: #166534;
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin-left: 8px;
+}
+
+.merchant-footer {
+  padding: 8px 12px;
+  background: #f8fafc;
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: #64748b;
+}
+
+.stacking-tip {
+  padding: 8px 12px;
+  background: linear-gradient(135deg, #dcfce7 0%, #d1fae5 100%);
+  font-size: 11px;
+  color: #166534;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Footer */
+.footer {
+  padding: 12px 16px;
+  background: white;
+  border-top: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: sticky;
+  bottom: 0;
+}
+
+.footer-btn {
+  padding: 8px 16px;
+  font-size: 12px;
+  font-weight: 500;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  background: white;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.footer-btn:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+}
+
+.footer-btn.primary {
+  background: #2563eb;
+  border-color: #2563eb;
+  color: white;
+}
+
+.footer-btn.primary:hover {
+  background: #1d4ed8;
+}
+
+/* View Toggle */
+.view-toggle {
+  display: flex;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.view-toggle button {
+  padding: 6px 12px;
+  border: none;
+  background: white;
+  font-size: 11px;
+  cursor: pointer;
+  color: #64748b;
+}
+
+.view-toggle button.active {
+  background: #2563eb;
+  color: white;
+}
+
+.view-toggle button:not(:last-child) {
+  border-right: 1px solid #e2e8f0;
+}
+
+/* Animations */
+.fade-in {
+  animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Loading spinner */
+.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+}
+
+.spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid #e2e8f0;
+  border-top-color: #2563eb;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}

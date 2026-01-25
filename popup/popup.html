@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reward Maximizer</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <!-- Header -->
+  <header class="header">
+    <div class="header-title">
+      <h1>
+        <span>Reward Maximizer</span>
+      </h1>
+      <div class="header-actions">
+        <button class="icon-btn" id="settingsBtn" title="Settings">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+          </svg>
+        </button>
+      </div>
+    </div>
+    <div class="sync-bar">
+      <button class="sync-btn amex" data-source="amex">Amex</button>
+      <button class="sync-btn chase" data-source="chase">Chase</button>
+      <button class="sync-btn citi" data-source="citi">Citi</button>
+      <button class="sync-btn capital-one" data-source="capital-one">Cap One</button>
+      <button class="sync-btn discover" data-source="discover">Discover</button>
+      <button class="sync-btn bofa" data-source="bofa">BofA</button>
+      <button class="sync-btn usbank" data-source="usbank">US Bank</button>
+      <button class="sync-btn rakuten" data-source="rakuten">Rakuten</button>
+    </div>
+  </header>
+
+  <!-- Search and Filters -->
+  <div class="search-filter">
+    <div class="search-box">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2" style="margin-right: 8px;">
+        <circle cx="11" cy="11" r="8"></circle>
+        <path d="M21 21l-4.35-4.35"></path>
+      </svg>
+      <input type="text" id="searchInput" placeholder="Search merchants...">
+    </div>
+    <div class="filter-chips" id="filterChips">
+      <button class="filter-chip active" data-filter="all">All</button>
+      <button class="filter-chip" data-filter="dining">Dining</button>
+      <button class="filter-chip" data-filter="travel">Travel</button>
+      <button class="filter-chip" data-filter="gas">Gas</button>
+      <button class="filter-chip" data-filter="grocery">Grocery</button>
+      <button class="filter-chip" data-filter="shopping">Shopping</button>
+      <button class="filter-chip" data-filter="stackable">Stackable</button>
+    </div>
+  </div>
+
+  <!-- Status Bar -->
+  <div class="status-bar" id="statusBar">
+    <span id="statusText">Ready to sync</span>
+    <span id="offerCount">0 offers</span>
+  </div>
+
+  <!-- Offers Container -->
+  <div class="offers-container" id="offersContainer">
+    <div class="empty-state" id="emptyState">
+      <div class="empty-state-icon">📋</div>
+      <h3>No offers synced yet</h3>
+      <p>Visit a card portal and click the sync button to get started</p>
+    </div>
+    <!-- Offers will be rendered here -->
+  </div>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="view-toggle">
+      <button class="active" data-view="merchant" title="Group by Merchant">By Merchant</button>
+      <button data-view="card" title="Group by Card">By Card</button>
+      <button data-view="category" title="Group by Category">By Category</button>
+    </div>
+    <button class="footer-btn" id="exportBtn">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+        <polyline points="7 10 12 15 17 10"></polyline>
+        <line x1="12" y1="15" x2="12" y2="3"></line>
+      </svg>
+      Export
+    </button>
+  </footer>
+
+  <script src="../lib/storage.js"></script>
+  <script src="../lib/valuation.js"></script>
+  <script src="../lib/categories.js"></script>
+  <script src="../lib/export.js"></script>
+  <script src="../data/defaults.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>

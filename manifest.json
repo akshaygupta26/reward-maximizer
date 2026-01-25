@@ -1,0 +1,140 @@
+{
+  "manifest_version": 3,
+  "name": "Reward Maximizer",
+  "version": "2.0.0",
+  "description": "Sync and stack credit card offers for maximum rewards. Compare point values across cards and find the best deals.",
+  "permissions": [
+    "storage",
+    "tabs",
+    "activeTab",
+    "scripting",
+    "alarms"
+  ],
+  "host_permissions": [
+    "https://*.americanexpress.com/*",
+    "https://*.chase.com/*",
+    "https://*.citi.com/*",
+    "https://*.citibank.com/*",
+    "https://*.capitalone.com/*",
+    "https://*.capitaloneshopping.com/*",
+    "https://*.discover.com/*",
+    "https://*.bankofamerica.com/*",
+    "https://*.bofa.com/*",
+    "https://*.usbank.com/*",
+    "https://*.rakuten.com/*"
+  ],
+  "action": {
+    "default_popup": "popup/popup.html",
+    "default_title": "Reward Maximizer"
+  },
+  "background": {
+    "service_worker": "background/service-worker.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://*.americanexpress.com/*"
+      ],
+      "js": [
+        "lib/categories.js",
+        "content/utils.js",
+        "content/scrapers/amex.js",
+        "content/content-main.js"
+      ],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://*.chase.com/*"
+      ],
+      "js": [
+        "lib/categories.js",
+        "content/utils.js",
+        "content/scrapers/chase.js",
+        "content/content-main.js"
+      ],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://*.citi.com/*",
+        "https://*.citibank.com/*"
+      ],
+      "js": [
+        "lib/categories.js",
+        "content/utils.js",
+        "content/scrapers/citi.js",
+        "content/content-main.js"
+      ],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://*.capitalone.com/*",
+        "https://*.capitaloneshopping.com/*"
+      ],
+      "js": [
+        "lib/categories.js",
+        "content/utils.js",
+        "content/scrapers/capital-one.js",
+        "content/content-main.js"
+      ],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://*.discover.com/*"
+      ],
+      "js": [
+        "lib/categories.js",
+        "content/utils.js",
+        "content/scrapers/discover.js",
+        "content/content-main.js"
+      ],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://*.bankofamerica.com/*",
+        "https://*.bofa.com/*"
+      ],
+      "js": [
+        "lib/categories.js",
+        "content/utils.js",
+        "content/scrapers/bofa.js",
+        "content/content-main.js"
+      ],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://*.usbank.com/*"
+      ],
+      "js": [
+        "lib/categories.js",
+        "content/utils.js",
+        "content/scrapers/usbank.js",
+        "content/content-main.js"
+      ],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://*.rakuten.com/*"
+      ],
+      "js": [
+        "lib/categories.js",
+        "content/utils.js",
+        "content/scrapers/rakuten.js",
+        "content/content-main.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["lib/*.js", "data/*.js"],
+      "matches": ["<all_urls>"]
+    }
+  ]
+}
