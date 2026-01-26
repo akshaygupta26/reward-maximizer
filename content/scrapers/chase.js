@@ -66,14 +66,14 @@ const ChaseScraper = {
     return { offers: cleaned, added, totalFound: cleaned.length };
   },
 
-  // Click and return method (based on proven GitHub repo approach)
+  // Click offers one at a time with navigation (proven approach)
   async clickAndReturn(attempts = 0) {
     if (!this.isRunning) {
       this.log('Stopped');
       return 0;
     }
 
-    // Find available buttons
+    // Find all add buttons
     const buttons = document.querySelectorAll('[data-cy="commerce-tile-button"], [data-testid="commerce-tile-button"]');
 
     if (buttons.length === 0) {
@@ -82,7 +82,7 @@ const ChaseScraper = {
         await this.wait(2000);
         return this.clickAndReturn(attempts + 1);
       } else {
-        this.log('All offers added! (or no more found)');
+        this.log('All offers added!');
         return 0;
       }
     }
@@ -113,7 +113,6 @@ const ChaseScraper = {
       }
     } catch (error) {
       this.log('Error clicking button:', error);
-      // If click fails, retry
       if (attempts < 3) {
         this.log(`Click failed. Retrying (${attempts + 1}/3)...`);
         await this.wait(1000);
@@ -122,25 +121,25 @@ const ChaseScraper = {
       return 0;
     }
 
-    // Wait for navigation to confirmation page (randomized delay 800-1300ms)
+    // Wait for navigation (randomized 800-1300ms)
     const backDelay = Math.floor(Math.random() * 500) + 800;
     await this.wait(backDelay);
 
-    // Navigate back to original offers page
+    // Navigate back to offers page
     this.log('Returning to offers page...');
     window.location.href = this.originalUrl;
 
-    // Wait for page to reload (randomized delay 800-1300ms)
+    // Wait for page reload (randomized 800-1300ms)
     const reloadDelay = Math.floor(Math.random() * 500) + 800;
     await this.wait(reloadDelay);
 
-    // Continue to next offer if still running
+    // Continue to next offer
     if (this.isRunning) {
       const added = await this.clickAndReturn(0);
-      return added + 1; // Count this one plus any subsequent ones
+      return added + 1;
     }
 
-    return 1; // Just this one
+    return 1;
   },
 
   // Stop the scraping process

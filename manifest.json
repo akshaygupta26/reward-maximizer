@@ -21,7 +21,8 @@
     "https://*.bankofamerica.com/*",
     "https://*.bofa.com/*",
     "https://*.usbank.com/*",
-    "https://*.rakuten.com/*"
+    "https://*.rakuten.com/*",
+    "<all_urls>"
   ],
   "action": {
     "default_popup": "popup/popup.html",
@@ -129,6 +130,28 @@
         "content/content-main.js"
       ],
       "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "content/merchant-banner.js"
+      ],
+      "run_at": "document_idle",
+      "exclude_matches": [
+        "https://*.americanexpress.com/*",
+        "https://*.chase.com/*",
+        "https://*.citi.com/*",
+        "https://*.citibank.com/*",
+        "https://*.capitalone.com/*",
+        "https://*.capitaloneshopping.com/*",
+        "https://*.discover.com/*",
+        "https://*.bankofamerica.com/*",
+        "https://*.bofa.com/*",
+        "https://*.usbank.com/*",
+        "https://*.rakuten.com/*"
+      ]
     }
   ],
   "web_accessible_resources": [

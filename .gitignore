@@ -42,3 +42,6 @@ yarn-error.log
 # Environment variables
 .env
 .env.local
+
+# AI context files
+CLAUDE.md

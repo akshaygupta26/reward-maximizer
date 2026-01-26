@@ -24,7 +24,71 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Initialize
   await loadData();
   setupEventListeners();
+  await detectCurrentMerchant();
   render();
+
+  // Detect current merchant and auto-filter
+  async function detectCurrentMerchant() {
+    try {
+      // Get current tab
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      if (!tab || !tab.url) {
+        console.log('[RMX-Popup] No active tab found');
+        return;
+      }
+
+      const url = new URL(tab.url);
+      const hostname = url.hostname.replace('www.', '').toLowerCase();
+
+      // Skip portal sites
+      const portalSites = [
+        'americanexpress.com', 'chase.com', 'citi.com', 'citibank.com',
+        'capitalone.com', 'capitaloneshopping.com', 'discover.com',
+        'bankofamerica.com', 'bofa.com', 'usbank.com', 'rakuten.com'
+      ];
+
+      if (portalSites.some(site => hostname.includes(site))) {
+        console.log('[RMX-Popup] On portal site, skipping auto-filter');
+        return;
+      }
+
+      // Extract merchant name from hostname
+      const merchantName = hostname.split('.')[0];
+      console.log('[RMX-Popup] Checking for offers matching:', merchantName);
+
+      // Find matching offers using fuzzy matching
+      const matchingOffers = offers.filter(offer => {
+        const offerMerchant = offer.merchant.toLowerCase();
+        const match = offerMerchant.includes(merchantName) ||
+                      merchantName.includes(offerMerchant) ||
+                      offerMerchant.replace(/[^a-z0-9]/g, '') === merchantName.replace(/[^a-z0-9]/g, '');
+        return match;
+      });
+
+      if (matchingOffers.length > 0) {
+        console.log('[RMX-Popup] Found', matchingOffers.length, 'offers for current site');
+
+        // Auto-populate search with merchant name
+        searchQuery = matchingOffers[0].merchant.toLowerCase();
+        searchInput.value = matchingOffers[0].merchant;
+        searchInput.placeholder = `Showing offers for ${matchingOffers[0].merchant}`;
+
+        // Apply filters
+        applyFilters();
+
+        // Show notification
+        updateStatus(`Found ${matchingOffers.length} offer(s) for ${matchingOffers[0].merchant}`, 'success');
+
+        // Highlight the search box briefly
+        searchInput.style.background = '#fef3c7';
+        setTimeout(() => {
+          searchInput.style.background = '';
+        }, 2000);
+      }
+    } catch (err) {
+      console.error('[RMX-Popup] Error detecting current merchant:', err);
+    }
+  }
 
   // Load data from storage
   async function loadData() {
