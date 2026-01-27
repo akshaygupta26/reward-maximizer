@@ -1,7 +1,10 @@
 // Background Service Worker
 // Handles notifications, badge updates, and cross-tab communication
 
-console.log('[Reward Maximizer] Service worker started');
+// Import debug utility
+importScripts('../lib/debug.js');
+
+debug.log('[Reward Maximizer] Service worker started');
 
 // Initialize badge
 chrome.action.setBadgeBackgroundColor({ color: '#2563eb' });

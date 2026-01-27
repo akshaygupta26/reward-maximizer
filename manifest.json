@@ -41,6 +41,7 @@
         "https://*.americanexpress.com/*"
       ],
       "js": [
+        "lib/debug.js",
         "lib/categories.js",
         "content/utils.js",
         "content/scrapers/amex.js",
@@ -53,6 +54,7 @@
         "https://*.chase.com/*"
       ],
       "js": [
+        "lib/debug.js",
         "lib/categories.js",
         "content/utils.js",
         "content/scrapers/chase.js",
@@ -66,6 +68,7 @@
         "https://*.citibank.com/*"
       ],
       "js": [
+        "lib/debug.js",
         "lib/categories.js",
         "content/utils.js",
         "content/scrapers/citi.js",
@@ -79,6 +82,7 @@
         "https://*.capitaloneshopping.com/*"
       ],
       "js": [
+        "lib/debug.js",
         "lib/categories.js",
         "content/utils.js",
         "content/scrapers/capital-one.js",
@@ -91,6 +95,7 @@
         "https://*.discover.com/*"
       ],
       "js": [
+        "lib/debug.js",
         "lib/categories.js",
         "content/utils.js",
         "content/scrapers/discover.js",
@@ -104,6 +109,7 @@
         "https://*.bofa.com/*"
       ],
       "js": [
+        "lib/debug.js",
         "lib/categories.js",
         "content/utils.js",
         "content/scrapers/bofa.js",
@@ -116,6 +122,7 @@
         "https://*.usbank.com/*"
       ],
       "js": [
+        "lib/debug.js",
         "lib/categories.js",
         "content/utils.js",
         "content/scrapers/usbank.js",
@@ -128,6 +135,7 @@
         "https://*.rakuten.com/*"
       ],
       "js": [
+        "lib/debug.js",
         "lib/categories.js",
         "content/utils.js",
         "content/scrapers/rakuten.js",
@@ -140,6 +148,7 @@
         "<all_urls>"
       ],
       "js": [
+        "lib/debug.js",
         "content/merchant-banner.js"
       ],
       "run_at": "document_idle",
