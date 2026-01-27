@@ -28,6 +28,10 @@
     "default_popup": "popup/popup.html",
     "default_title": "Reward Maximizer"
   },
+  "options_ui": {
+    "page": "settings/settings.html",
+    "open_in_tab": true
+  },
   "background": {
     "service_worker": "background/service-worker.js"
   },

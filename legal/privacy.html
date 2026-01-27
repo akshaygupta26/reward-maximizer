@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Privacy Policy - Reward Maximizer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            color: #667eea;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .meta {
+            color: #666;
+            font-size: 0.9em;
+            margin-bottom: 30px;
+        }
+
+        h2 {
+            color: #764ba2;
+            font-size: 1.8em;
+            margin-top: 40px;
+            margin-bottom: 15px;
+        }
+
+        h3 {
+            color: #667eea;
+            font-size: 1.3em;
+            margin-top: 25px;
+            margin-bottom: 10px;
+        }
+
+        p {
+            margin-bottom: 15px;
+        }
+
+        ul, ol {
+            margin-left: 30px;
+            margin-bottom: 15px;
+        }
+
+        li {
+            margin-bottom: 8px;
+        }
+
+        .summary {
+            background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%);
+            border-left: 4px solid #667eea;
+            padding: 20px;
+            margin: 30px 0;
+            border-radius: 8px;
+        }
+
+        .summary h2 {
+            margin-top: 0;
+            font-size: 1.5em;
+        }
+
+        .warning {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+
+        .important {
+            background: #d1ecf1;
+            border-left: 4px solid #17a2b8;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+
+        strong {
+            color: #764ba2;
+        }
+
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+
+        .back-button {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 10px 20px;
+            text-decoration: none;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            transition: transform 0.2s;
+        }
+
+        .back-button:hover {
+            transform: translateY(-2px);
+        }
+
+        hr {
+            border: none;
+            border-top: 2px solid #eee;
+            margin: 40px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="../settings/settings.html" class="back-button">← Back to Settings</a>
+
+        <h1>Privacy Policy</h1>
+        <div class="meta">
+            <strong>Last Updated:</strong> January 26, 2026<br>
+            <strong>Effective Date:</strong> January 26, 2026
+        </div>
+
+        <div class="summary">
+            <h2>Summary (TL;DR)</h2>
+            <p><strong>What we collect:</strong> Credit card offers, your preferences, sync history - all stored locally on your device.</p>
+            <p><strong>What we DON'T collect:</strong> Personal information, credentials, browsing history, financial data, or analytics.</p>
+            <p><strong>Where data is stored:</strong> Only on your device using Chrome's local storage. Never sent to external servers.</p>
+            <p><strong>Who we share with:</strong> No one. Your data stays with you.</p>
+            <p><strong>Your control:</strong> Full control. Export, modify, or delete anytime. Uninstall removes everything.</p>
+        </div>
+
+        <h2>Introduction</h2>
+        <p>Reward Maximizer ("we," "our," or "the extension") is a Chrome browser extension designed to help users maximize credit card rewards by tracking and comparing offers across multiple credit card portals and cashback platforms.</p>
+        <p>We are committed to protecting your privacy. This Privacy Policy explains what information we collect, how we use it, and your rights regarding your data.</p>
+
+        <h2>Information We Collect</h2>
+
+        <h3>Data Collected and Stored Locally</h3>
+        <p>Reward Maximizer collects and stores the following information <strong>locally on your device</strong> using Chrome's local storage API:</p>
+
+        <ol>
+            <li><strong>Credit Card Offers</strong>
+                <ul>
+                    <li>Merchant names</li>
+                    <li>Offer values (cashback percentages, bonus points, fixed rewards)</li>
+                    <li>Offer sources (credit card portal names)</li>
+                    <li>Expiration dates (when available)</li>
+                    <li>Merchant categories</li>
+                    <li>Opt-in timestamps</li>
+                    <li>Offer status</li>
+                </ul>
+            </li>
+            <li><strong>User Preferences and Settings</strong>
+                <ul>
+                    <li>Selected credit cards</li>
+                    <li>Custom point valuations</li>
+                    <li>View preferences (by merchant, card, or category)</li>
+                    <li>Banner display preferences</li>
+                </ul>
+            </li>
+            <li><strong>Sync History</strong>
+                <ul>
+                    <li>Last sync timestamps for each credit card portal</li>
+                    <li>No specific transaction data or purchase history</li>
+                </ul>
+            </li>
+            <li><strong>Current Tab Information</strong>
+                <ul>
+                    <li>URL of the currently active tab (used only to detect merchant websites and display relevant offers)</li>
+                    <li>This information is processed in real-time and not permanently stored</li>
+                </ul>
+            </li>
+        </ol>
+
+        <h3>Data We DO NOT Collect</h3>
+        <div class="important">
+            <p>We want to be clear about what we <strong>do not</strong> collect:</p>
+            <ul>
+                <li>❌ Personal identification information (name, email, address, phone number)</li>
+                <li>❌ Credit card numbers or financial account credentials</li>
+                <li>❌ Banking login credentials or passwords</li>
+                <li>❌ Purchase history or transaction details</li>
+                <li>❌ Browsing history beyond the current tab URL</li>
+                <li>❌ Location data</li>
+                <li>❌ Analytics or usage tracking data (currently)</li>
+                <li>❌ Any data about your financial accounts or balances</li>
+            </ul>
+        </div>
+
+        <h2>How We Use Your Information</h2>
+        <p>The information collected is used solely for the following purposes:</p>
+        <ol>
+            <li><strong>Offer Management</strong> - Store and organize credit card offers, display relevant offers when you visit merchant websites, compare offer values, and identify stacking opportunities</li>
+            <li><strong>Personalization</strong> - Customize point valuations, filter and organize offers, auto-detect current merchant websites</li>
+            <li><strong>Functionality</strong> - Enable sync operations, provide export capabilities, show offer alerts</li>
+        </ol>
+
+        <h2>Data Storage and Security</h2>
+
+        <h3>Local Storage Only</h3>
+        <div class="important">
+            <p><strong>All data is stored locally on your device</strong> using Chrome's local storage API. We do not:</p>
+            <ul>
+                <li>❌ Transmit your data to any external servers</li>
+                <li>❌ Store your data in any cloud services</li>
+                <li>❌ Share your data with third parties</li>
+                <li>❌ Use remote databases or backend services</li>
+            </ul>
+            <p>Your data remains entirely on your computer and is never sent over the internet by our extension.</p>
+        </div>
+
+        <h3>Data Security</h3>
+        <ul>
+            <li>Data is stored using Chrome's secure storage APIs</li>
+            <li>Your data is only accessible to the Reward Maximizer extension</li>
+            <li>Data is isolated from other extensions and websites</li>
+            <li>When you uninstall the extension, all stored data is automatically deleted</li>
+        </ul>
+
+        <h2>How the Extension Accesses Websites</h2>
+
+        <h3>Portal Scraping</h3>
+        <p>Reward Maximizer accesses credit card portal websites (American Express, Chase, Citi, Capital One, Discover, Bank of America, US Bank) and cashback platforms (Rakuten, Capital One Shopping, TopCashback) to:</p>
+        <ul>
+            <li>Read publicly available offer information displayed on your account's offer pages</li>
+            <li>Automatically click "Add Offer" or "Activate" buttons on your behalf (when you initiate a sync)</li>
+            <li>This only occurs when you explicitly click a sync button in the extension</li>
+        </ul>
+        <div class="important">
+            <p><strong>Important:</strong> We do not store or transmit your login credentials. The extension only reads offer data that is already visible in your authenticated browser session.</p>
+        </div>
+
+        <h3>Merchant Website Detection</h3>
+        <p>The extension runs on all websites to detect when you visit a merchant that has active offers. This allows us to show a banner alerting you to available offers and display the best card to use.</p>
+        <p>The extension only reads the website's URL (hostname) to determine if it matches any stored merchant names. No other data from the website is collected.</p>
+
+        <h2>Third-Party Services</h2>
+        <p>Reward Maximizer currently <strong>does not use any third-party services</strong>, including no analytics services, no error tracking services, no advertising networks, and no data sharing with affiliates or partners.</p>
+        <p>If we decide to add analytics or error tracking in the future, we will update this privacy policy, request your explicit consent, and provide opt-out options.</p>
+
+        <h2>Data Sharing and Disclosure</h2>
+        <p>We <strong>do not sell, trade, rent, or share</strong> your information with third parties.</p>
+
+        <h2>Your Rights and Choices</h2>
+        <p>You have full control over your data:</p>
+        <ul>
+            <li><strong>Access and Export:</strong> View all stored offers, export data using CSV or JSON</li>
+            <li><strong>Modification:</strong> Update or delete individual offers, modify preferences</li>
+            <li><strong>Deletion:</strong> Clear all offers or delete specific offers, uninstalling removes all data</li>
+            <li><strong>Opt-Out:</strong> Disable merchant banner, choose which portals to sync</li>
+        </ul>
+
+        <h2>Legal Disclaimers</h2>
+
+        <h3>Not Affiliated with Financial Institutions</h3>
+        <div class="warning">
+            <p>Reward Maximizer is an independent tool and is <strong>not affiliated with, endorsed by, or sponsored by</strong> American Express, Chase, Citi, Capital One, Discover, Bank of America, US Bank, Rakuten, or any other credit card issuer or cashback platform.</p>
+        </div>
+
+        <h3>Use at Your Own Risk</h3>
+        <p>By using Reward Maximizer, you acknowledge that:</p>
+        <ul>
+            <li>You are responsible for ensuring your use complies with your credit card issuers' terms of service</li>
+            <li>The extension automates certain actions on your behalf</li>
+            <li>We are not responsible for any consequences of using this automation</li>
+            <li>You should verify all offers directly on the credit card portal</li>
+        </ul>
+
+        <h2>Contact Information</h2>
+        <p>If you have questions, concerns, or requests regarding this Privacy Policy, please contact us:</p>
+        <p><strong>Email:</strong> rewardmaximizer@gmail.com</p>
+        <p><strong>Response Time:</strong> We aim to respond to all inquiries within 7 business days.</p>
+
+        <hr>
+
+        <h2>Data Protection Rights</h2>
+        <p>If you are located in the European Union or California, you have additional rights under GDPR and CCPA.</p>
+        <p><strong>Important Note:</strong> Since all data is stored locally on your device, you already have full control. You can delete all data by uninstalling the extension or using in-app delete functions.</p>
+
+        <h2>Consent</h2>
+        <p>By installing and using Reward Maximizer, you consent to the data collection practices described in this policy. You can withdraw consent at any time by uninstalling the extension.</p>
+
+        <hr>
+
+        <p style="text-align: center; color: #666; margin-top: 40px;">
+            <strong>This privacy policy is effective as of January 26, 2026.</strong>
+        </p>
+    </div>
+</body>
+</html>
