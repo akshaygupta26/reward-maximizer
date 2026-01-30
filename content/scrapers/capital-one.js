@@ -27,15 +27,20 @@ const CapitalOneScraper = {
   },
 
   async scrape() {
-    const host = window.location.hostname.toLowerCase();
+    try {
+      const host = window.location.hostname.toLowerCase();
 
-    // On Capital One Shopping site - scrape merchant rates
-    if (host.includes('capitaloneshopping.com')) {
-      return await this.scrapeShoppingPortal();
+      // On Capital One Shopping site - scrape merchant rates
+      if (host.includes('capitaloneshopping.com')) {
+        return await this.scrapeShoppingPortal();
+      }
+
+      // On any other site - check if cashback available
+      return await this.checkCurrentSite();
+    } catch (err) {
+      console.error('[RMX-CapitalOne] Scrape failed:', err);
+      return { offers: [], added: 0, totalFound: 0 };
     }
-
-    // On any other site - check if cashback available
-    return await this.checkCurrentSite();
   },
 
   // Scrape cashback rates from Capital One Shopping portal
@@ -65,6 +70,7 @@ const CapitalOneScraper = {
   },
 
   collectMerchantRates() {
+    try {
     const offers = [];
     const seen = new Set();
 
@@ -93,6 +99,10 @@ const CapitalOneScraper = {
     });
 
     return offers;
+    } catch (err) {
+      console.error('[RMX-CapitalOne] collectMerchantRates failed:', err);
+      return [];
+    }
   },
 
   extractMerchant(card) {

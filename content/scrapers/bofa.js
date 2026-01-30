@@ -14,34 +14,39 @@ const BofAScraper = {
   },
 
   async scrape() {
-    await this.expandOffers();
-    const offers = this.collectOffers();
-    let added = 0;
+    try {
+      await this.expandOffers();
+      const offers = this.collectOffers();
+      let added = 0;
 
-    for (const offer of offers) {
-      if (offer.button && document.contains(offer.button)) {
-        try {
-          offer.button.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          await this.wait(200);
-          offer.button.click();
-          added++;
-          await this.wait(1000);
-        } catch (err) {
-          console.warn('[Reward Maximizer] Failed to click BofA offer:', err);
+      for (const offer of offers) {
+        if (offer.button && document.contains(offer.button)) {
+          try {
+            offer.button.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            await this.wait(200);
+            offer.button.click();
+            added++;
+            await this.wait(1000);
+          } catch (err) {
+            console.warn('[RMX-BofA] Failed to click offer:', err);
+          }
         }
       }
+
+      const cleaned = offers.map(offer => ({
+        merchant: offer.merchant,
+        value: offer.value,
+        expiry: offer.expiry,
+        merchantCategory: this.detectCategory(offer.merchant),
+        valueType: this.parseValueType(offer.value),
+        timestamp: Date.now()
+      }));
+
+      return { offers: cleaned, added, totalFound: cleaned.length };
+    } catch (err) {
+      console.error('[RMX-BofA] Scrape failed:', err);
+      return { offers: [], added: 0, totalFound: 0 };
     }
-
-    const cleaned = offers.map(offer => ({
-      merchant: offer.merchant,
-      value: offer.value,
-      expiry: offer.expiry,
-      merchantCategory: this.detectCategory(offer.merchant),
-      valueType: this.parseValueType(offer.value),
-      timestamp: Date.now()
-    }));
-
-    return { offers: cleaned, added, totalFound: cleaned.length };
   },
 
   async expandOffers() {
@@ -50,7 +55,9 @@ const BofAScraper = {
       try {
         expandBtn.click();
         await this.wait(1500);
-      } catch (err) {}
+      } catch (err) {
+        console.warn('[RMX-BofA] Failed to expand offers:', err);
+      }
     }
     await this.scrollToLoad();
   },

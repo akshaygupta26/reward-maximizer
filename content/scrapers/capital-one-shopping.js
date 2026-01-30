@@ -21,9 +21,14 @@ const CapitalOneShoppingScraper = {
   },
 
   async scrape() {
-    // This scraper primarily detects the CO Shopping extension on shopping sites
-    // and extracts the cashback rate it shows
-    return await this.checkCurrentSite();
+    try {
+      // This scraper primarily detects the CO Shopping extension on shopping sites
+      // and extracts the cashback rate it shows
+      return await this.checkCurrentSite();
+    } catch (err) {
+      console.error('[RMX-CapitalOneShopping] Scrape failed:', err);
+      return { offers: [], added: 0, totalFound: 0, extensionPresent: false };
+    }
   },
 
   async checkCurrentSite() {
@@ -67,17 +72,21 @@ const CapitalOneShoppingScraper = {
 
     // Also check for shadow DOM (some extensions use this)
     if (!extensionPresent) {
-      const allElements = document.querySelectorAll('*');
-      for (const el of allElements) {
-        if (el.shadowRoot) {
-          const shadowIndicators = el.shadowRoot.querySelectorAll(
-            '[class*="capitalone"], [class*="cns-"]'
-          );
-          if (shadowIndicators.length > 0) {
-            extensionPresent = true;
-            break;
+      try {
+        const allElements = document.querySelectorAll('*');
+        for (const el of allElements) {
+          if (el.shadowRoot) {
+            const shadowIndicators = el.shadowRoot.querySelectorAll(
+              '[class*="capitalone"], [class*="cns-"]'
+            );
+            if (shadowIndicators.length > 0) {
+              extensionPresent = true;
+              break;
+            }
           }
         }
+      } catch (err) {
+        console.error('[RMX-CapitalOneShopping] Shadow DOM check failed:', err);
       }
     }
 

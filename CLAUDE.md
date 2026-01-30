@@ -1047,13 +1047,9 @@ Mitigation:
    - Performance testing (memory <50MB, banner loads <2s)
    - Test all view modes, search, filters, export
 
-4. **First-Run Onboarding** (2-3 days) - 0%
-   - Create /onboarding/welcome.html
-   - Welcome message and permissions explanation
-   - Quick tutorial (go to portal → sync → shop)
-   - Link to privacy policy
-   - Update service worker to detect first install
-   - Show welcome page on first run
+4. **First-Run Onboarding** - COMPLETE
+   - /onboarding/welcome.html and onboarding.js created
+   - service-worker.js onInstalled listener opens welcome page on first install
 
 **Timeline to Launch:** 2-3 weeks (Option C - Full Polish)
 

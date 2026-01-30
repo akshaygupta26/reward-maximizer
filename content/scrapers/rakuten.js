@@ -22,18 +22,23 @@ const RakutenScraper = {
   },
 
   async scrape() {
-    this.log('=== Starting Rakuten scrape ===');
-    const host = window.location.hostname.toLowerCase();
-    this.log('Current hostname:', host);
+    try {
+      this.log('=== Starting Rakuten scrape ===');
+      const host = window.location.hostname.toLowerCase();
+      this.log('Current hostname:', host);
 
-    if (host.includes('rakuten.com')) {
-      this.log('On Rakuten site - scraping merchant rates');
-      return await this.scrapeRakutenSite();
+      if (host.includes('rakuten.com')) {
+        this.log('On Rakuten site - scraping merchant rates');
+        return await this.scrapeRakutenSite();
+      }
+
+      this.log('On external site - checking for Rakuten button');
+      // On other sites, check for Rakuten button/extension
+      return await this.checkCurrentSite();
+    } catch (err) {
+      console.error('[RMX-Rakuten] Scrape failed:', err);
+      return { offers: [], added: 0, totalFound: 0 };
     }
-
-    this.log('On external site - checking for Rakuten button');
-    // On other sites, check for Rakuten button/extension
-    return await this.checkCurrentSite();
   },
 
   async scrapeRakutenSite() {
@@ -180,6 +185,7 @@ const RakutenScraper = {
   },
 
   collectMerchantRatesFromModal() {
+    try {
     this.log('=== Scraping from modal ===');
     const offers = [];
     const seen = new Set();
@@ -207,12 +213,19 @@ const RakutenScraper = {
         merchant = img.alt.replace(/ - Rakuten coupons and Cash Back/i, '').trim();
       }
 
-      // Extract cashback percentage from the span
-      const cashbackSpan = link.querySelector('span.css-1o3lf2p');
+      // Extract cashback percentage from the span (multiple selectors for resilience)
+      const cashbackSpan = link.querySelector('span.css-1o3lf2p')
+        || link.querySelector('[class*="cashback"], [class*="rate"], [class*="percent"]');
       let value = 'See details';
 
       if (cashbackSpan) {
         value = cashbackSpan.textContent.trim();
+      } else {
+        // Fallback: search link text for cashback pattern
+        const linkText = link.textContent || '';
+        const rateMatch = linkText.match(/(\d+(?:\.\d+)?%)\s*Cash\s*Back/i)
+          || linkText.match(/(\d+(?:\.\d+)?%)/);
+        if (rateMatch) value = rateMatch[1] + ' Cash Back';
       }
 
       // Extract portal URL
@@ -230,6 +243,10 @@ const RakutenScraper = {
 
     this.log('Total unique merchants from modal:', offers.length);
     return offers;
+    } catch (err) {
+      console.error('[RMX-Rakuten] collectMerchantRatesFromModal failed:', err);
+      return [];
+    }
   },
 
   extractMerchant(card) {
