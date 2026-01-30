@@ -6,6 +6,14 @@ const CapitalOneScraper = {
   source: 'capital-one',
   shoppingUrl: 'https://www.capitaloneshopping.com/',
   portalBaseUrl: 'https://www.capitaloneshopping.com/s/',
+  debug: true, // Enable detailed logging
+
+  // Logging helper
+  log(...args) {
+    if (this.debug) {
+      console.log('[RMX-CapitalOne]', ...args);
+    }
+  },
 
   // Capital One Shopping page - scrape available rates
   needsNavigation() {
@@ -185,4 +193,5 @@ const CapitalOneScraper = {
 
 if (typeof window !== 'undefined') {
   window.CapitalOneScraper = CapitalOneScraper;
+  console.log('[RMX-CapitalOne] Scraper loaded successfully');
 }

@@ -81,13 +81,24 @@ async function handleScrapeRequest(sendResponse) {
     }
 
     // Run the scraper
+    console.log('[RMX-Content] About to run scraper for', site);
     const result = await scraper.scrape();
-    sendResponse({
+    console.log('[RMX-Content] Scraper completed. Offers count:', result.offers?.length);
+    console.log('[RMX-Content] Sending response to popup:', {
+      site,
+      offersCount: result.offers?.length,
+      sample: result.offers?.[0]
+    });
+
+    const response = {
       site,
       offers: result.offers || [],
       added: result.added || 0,
       totalFound: result.totalFound || result.offers?.length || 0
-    });
+    };
+
+    sendResponse(response);
+    console.log('[RMX-Content] ✅ Response sent to popup');
   } catch (err) {
     console.error('[Reward Maximizer] Scrape failed:', err);
     sendResponse({ error: err?.message || 'scrape_failed', site });
@@ -196,8 +207,75 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
 });
 
-// Run auto-sync on page load
+// Check for pending sync from popup navigation
+async function checkPendingSyncFromPopup() {
+  try {
+    const result = await chrome.storage.local.get(['rmx_pending_sync']);
+    if (!result.rmx_pending_sync) return;
+
+    const { source, timestamp } = result.rmx_pending_sync;
+    const currentSite = detectSite();
+
+    // Check if this is the site we were waiting for
+    if (currentSite === source) {
+      console.log('[RMX-Content] Found pending sync from popup for', source);
+
+      // Clear the flag
+      await chrome.storage.local.remove('rmx_pending_sync');
+
+      // Wait a moment for page to settle
+      setTimeout(async () => {
+        const scraper = getScraper(currentSite);
+        if (!scraper) return;
+
+        console.log('[RMX-Content] Auto-syncing after navigation...');
+
+        // Notify service worker sync is starting
+        chrome.runtime.sendMessage({
+          action: 'start_sync',
+          portal: currentSite
+        }).catch(() => {});
+
+        try {
+          const result = await scraper.scrape();
+          if (result.offers && result.offers.length > 0) {
+            await mergeAndStoreOffers(result.offers, currentSite);
+            console.log('[RMX-Content] ✅ Auto-sync complete:', result.offers.length, 'offers saved');
+
+            // Notify service worker of successful sync
+            chrome.runtime.sendMessage({
+              action: 'complete_sync',
+              portal: currentSite,
+              offersCount: result.offers.length
+            }).catch(() => {});
+          } else {
+            // No offers but sync complete
+            chrome.runtime.sendMessage({
+              action: 'complete_sync',
+              portal: currentSite,
+              offersCount: 0
+            }).catch(() => {});
+          }
+        } catch (err) {
+          console.error('[RMX-Content] Auto-sync failed:', err);
+
+          // Notify service worker of error
+          chrome.runtime.sendMessage({
+            action: 'sync_error',
+            portal: currentSite,
+            error: err.message
+          }).catch(() => {});
+        }
+      }, 2000); // Wait 2 seconds for page to fully load
+    }
+  } catch (err) {
+    console.error('[RMX-Content] Error checking pending sync:', err);
+  }
+}
+
+// Run auto-sync checks on page load
 autoSyncIfPending();
+checkPendingSyncFromPopup();
 
 // Notify background script that content script is ready
 chrome.runtime.sendMessage({

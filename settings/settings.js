@@ -13,6 +13,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Initialize
   await loadSettings();
+  await loadPortalSelection();
   renderCards();
   renderValuations();
   renderStats();
@@ -28,6 +29,51 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('autoOptIn').checked = settings.autoOptIn !== false;
     document.getElementById('showStackingAlerts').checked = settings.showStackingAlerts !== false;
     document.getElementById('defaultView').value = settings.defaultView || 'merchant';
+  }
+
+  // Load portal selection from storage
+  async function loadPortalSelection() {
+    return new Promise((resolve) => {
+      chrome.storage.local.get(['rmx_user_cards'], (result) => {
+        const userPortals = result.rmx_user_cards || [];
+        console.log('[Settings] Loading user portals:', userPortals);
+
+        // Check the appropriate checkboxes
+        document.querySelectorAll('.portal-checkbox input[type="checkbox"][data-portal="true"]').forEach(checkbox => {
+          const portalValue = checkbox.value;
+          if (userPortals.includes(portalValue)) {
+            checkbox.checked = true;
+          }
+        });
+
+        resolve();
+      });
+    });
+  }
+
+  // Save portal selection
+  async function savePortalSelection() {
+    const selectedPortals = [];
+    document.querySelectorAll('.portal-checkbox input[type="checkbox"][data-portal="true"]:checked').forEach(checkbox => {
+      if (!checkbox.disabled) {
+        selectedPortals.push(checkbox.value);
+      }
+    });
+
+    console.log('[Settings] Saving portals:', selectedPortals);
+
+    if (selectedPortals.length === 0) {
+      showToast('Please select at least one portal', 'error');
+      return;
+    }
+
+    return new Promise((resolve) => {
+      chrome.storage.local.set({ rmx_user_cards: selectedPortals }, () => {
+        console.log('[Settings] ✅ Portals saved successfully');
+        showToast('Card selection saved! Popup will update on next open.', 'success');
+        resolve();
+      });
+    });
   }
 
   // Render card selection grid
@@ -187,6 +233,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Setup event listeners
   function setupEventListeners() {
+    // Portal selection save button
+    document.getElementById('savePortals').addEventListener('click', async () => {
+      await savePortalSelection();
+    });
+
     // Preferences
     document.getElementById('autoOptIn').addEventListener('change', async (e) => {
       settings.autoOptIn = e.target.checked;

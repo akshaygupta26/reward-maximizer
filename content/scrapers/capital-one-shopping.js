@@ -3,6 +3,14 @@
 
 const CapitalOneShoppingScraper = {
   source: 'capital-one-shopping',
+  debug: true, // Enable detailed logging
+
+  // Logging helper
+  log(...args) {
+    if (this.debug) {
+      console.log('[RMX-CapitalOneShopping]', ...args);
+    }
+  },
 
   needsNavigation() {
     return false;
@@ -122,4 +130,5 @@ const CapitalOneShoppingScraper = {
 
 if (typeof window !== 'undefined') {
   window.CapitalOneShoppingScraper = CapitalOneShoppingScraper;
+  console.log('[RMX-CapitalOneShopping] Scraper loaded successfully');
 }

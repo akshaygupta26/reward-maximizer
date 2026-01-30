@@ -13,6 +13,64 @@
       <p>Configure your cards and point valuations</p>
     </header>
 
+    <!-- Card Portals Section -->
+    <section class="card">
+      <h2>Card Portals & Cashback Sites</h2>
+      <p class="section-desc">Select which card issuers and cashback portals you want to sync offers from</p>
+
+      <div class="portal-selection" id="portalSelection">
+        <div class="portal-category">
+          <h3>💳 Credit Card Portals</h3>
+          <div class="portal-grid">
+            <label class="portal-checkbox">
+              <input type="checkbox" value="amex" data-portal="true">
+              <span class="portal-label">American Express</span>
+            </label>
+            <label class="portal-checkbox">
+              <input type="checkbox" value="chase" data-portal="true">
+              <span class="portal-label">Chase</span>
+            </label>
+            <label class="portal-checkbox disabled">
+              <input type="checkbox" value="citi" data-portal="true" disabled>
+              <span class="portal-label">Citi <span class="coming-soon-badge">Coming Soon</span></span>
+            </label>
+            <label class="portal-checkbox disabled">
+              <input type="checkbox" value="capital-one" data-portal="true" disabled>
+              <span class="portal-label">Capital One <span class="coming-soon-badge">Coming Soon</span></span>
+            </label>
+            <label class="portal-checkbox disabled">
+              <input type="checkbox" value="discover" data-portal="true" disabled>
+              <span class="portal-label">Discover <span class="coming-soon-badge">Coming Soon</span></span>
+            </label>
+            <label class="portal-checkbox">
+              <input type="checkbox" value="bofa" data-portal="true">
+              <span class="portal-label">Bank of America</span>
+            </label>
+            <label class="portal-checkbox">
+              <input type="checkbox" value="usbank" data-portal="true">
+              <span class="portal-label">US Bank</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="portal-category">
+          <h3>🛍️ Cashback Portals</h3>
+          <div class="portal-grid">
+            <label class="portal-checkbox">
+              <input type="checkbox" value="rakuten" data-portal="true">
+              <span class="portal-label">Rakuten</span>
+            </label>
+            <label class="portal-checkbox disabled">
+              <input type="checkbox" value="capital-one-shopping" data-portal="true" disabled>
+              <span class="portal-label">Capital One Shopping <span class="coming-soon-badge">Coming Soon</span></span>
+            </label>
+          </div>
+        </div>
+
+        <button class="btn primary" id="savePortals">Save Card Selection</button>
+      </div>
+    </section>
+
     <!-- My Cards Section -->
     <section class="card">
       <h2>My Cards</h2>

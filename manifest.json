@@ -8,7 +8,8 @@
     "tabs",
     "activeTab",
     "scripting",
-    "alarms"
+    "alarms",
+    "notifications"
   ],
   "host_permissions": [
     "https://*.americanexpress.com/*",

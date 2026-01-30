@@ -440,4 +440,96 @@ input:checked + .slider:before {
     width: 100%;
     justify-content: center;
   }
+
+  .portal-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Portal Selection Styles */
+.portal-selection {
+  margin-top: 16px;
+}
+
+.portal-category {
+  margin-bottom: 24px;
+}
+
+.portal-category h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1e293b;
+  margin-bottom: 12px;
+}
+
+.portal-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.portal-checkbox {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  background: #f8fafc;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.portal-checkbox:hover {
+  border-color: #2563eb;
+  background: #eff6ff;
+}
+
+.portal-checkbox input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  margin-right: 10px;
+  cursor: pointer;
+  accent-color: #2563eb;
+}
+
+.portal-label {
+  color: #1e293b;
+  font-size: 14px;
+  font-weight: 500;
+  flex: 1;
+}
+
+.portal-checkbox input[type="checkbox"]:checked + .portal-label {
+  color: #2563eb;
+}
+
+.portal-checkbox:has(input:checked) {
+  border-color: #2563eb;
+  background: #eff6ff;
+}
+
+.portal-checkbox.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.portal-checkbox.disabled:hover {
+  border-color: #e2e8f0;
+  background: #f8fafc;
+}
+
+.coming-soon-badge {
+  display: inline-block;
+  font-size: 11px;
+  color: #f59e0b;
+  background: #fef3c7;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 600;
+  margin-left: 4px;
+}
+
+#savePortals {
+  margin-top: 8px;
 }

@@ -43,5 +43,5 @@ yarn-error.log
 .env
 .env.local
 
-# AI context files
-CLAUDE.md
+# Session notes (historical, not needed in repo)
+docs/sessions/

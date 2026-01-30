@@ -4,6 +4,14 @@
 const RakutenScraper = {
   source: 'rakuten',
   offersUrl: 'https://www.rakuten.com/stores',
+  debug: true, // Enable detailed logging
+
+  // Logging helper
+  log(...args) {
+    if (this.debug) {
+      console.log('[RMX-Rakuten]', ...args);
+    }
+  },
 
   needsNavigation() {
     return false;
@@ -14,20 +22,73 @@ const RakutenScraper = {
   },
 
   async scrape() {
+    this.log('=== Starting Rakuten scrape ===');
     const host = window.location.hostname.toLowerCase();
+    this.log('Current hostname:', host);
 
     if (host.includes('rakuten.com')) {
+      this.log('On Rakuten site - scraping merchant rates');
       return await this.scrapeRakutenSite();
     }
 
+    this.log('On external site - checking for Rakuten button');
     // On other sites, check for Rakuten button/extension
     return await this.checkCurrentSite();
   },
 
   async scrapeRakutenSite() {
+    this.log('Scrolling to load lazy content...');
     await this.scrollToLoad();
-    const offers = this.collectMerchantRates();
 
+    // First check if we're already in a modal view
+    const inModal = document.querySelector('.chakra-modal__body');
+    if (inModal) {
+      this.log('Already in modal view, scraping directly...');
+      const offers = this.collectMerchantRatesFromModal();
+      return this.formatOffers(offers);
+    }
+
+    // Try to click "See All" buttons to open modals
+    this.log('Looking for "See All" buttons...');
+    const seeAllButtons = Array.from(document.querySelectorAll('a.chakra-button'))
+      .filter(btn => btn.textContent.includes('See All'));
+
+    this.log('Found', seeAllButtons.length, '"See All" buttons');
+
+    let allOffers = [];
+
+    // If we found See All buttons, iterate through ALL of them
+    if (seeAllButtons.length > 0) {
+      for (let i = 0; i < seeAllButtons.length; i++) {
+        this.log(`Clicking "See All" button ${i + 1} of ${seeAllButtons.length}...`);
+
+        // Click the button to open modal
+        seeAllButtons[i].click();
+        await this.wait(2000); // Wait for modal to open
+
+        // Scrape from the modal
+        const offers = this.collectMerchantRatesFromModal();
+        this.log(`Collected ${offers.length} offers from modal ${i + 1}`);
+        allOffers = allOffers.concat(offers);
+
+        // Close the modal to return to original state
+        await this.closeModal();
+        await this.wait(1000); // Wait for modal to close
+      }
+
+      this.log('=== Scraping complete, returned to original page ===');
+    } else {
+      // Fallback: try collecting from main page
+      this.log('No "See All" buttons found, trying main page...');
+      const offers = this.collectMerchantRates();
+      this.log('Collected', offers.length, 'offers from main page');
+      allOffers = allOffers.concat(offers);
+    }
+
+    return this.formatOffers(allOffers);
+  },
+
+  formatOffers(offers) {
     const cleaned = offers.map(offer => ({
       merchant: offer.merchant,
       value: offer.value,
@@ -38,7 +99,17 @@ const RakutenScraper = {
       timestamp: Date.now()
     }));
 
-    return { offers: cleaned, added: 0, totalFound: cleaned.length };
+    this.log('Total cleaned offers:', cleaned.length);
+    if (cleaned.length > 0) {
+      this.log('Sample offer:', cleaned[0]);
+    }
+
+    const result = { offers: cleaned, added: 0, totalFound: cleaned.length };
+    console.log('[RMX-Rakuten] RETURNING TO POPUP:', JSON.stringify({
+      offersCount: result.offers.length,
+      sample: result.offers[0]
+    }));
+    return result;
   },
 
   async scrollToLoad() {
@@ -63,12 +134,18 @@ const RakutenScraper = {
       'a[href*="/stores/"]'
     ].join(', ');
 
+    this.log('Using card selectors:', cardSelectors);
     const cards = document.querySelectorAll(cardSelectors);
+    this.log('Found merchant cards:', cards.length);
 
-    cards.forEach(card => {
+    cards.forEach((card, index) => {
       const merchant = this.extractMerchant(card);
       const value = this.extractCashbackRate(card);
       const portalUrl = this.extractPortalUrl(card);
+
+      if (index < 3) { // Log first 3 for debugging
+        this.log(`Card ${index}:`, { merchant, value, portalUrl });
+      }
 
       if (!merchant || seen.has(merchant.toLowerCase())) return;
       seen.add(merchant.toLowerCase());
@@ -83,7 +160,11 @@ const RakutenScraper = {
       '[class*="promo"]'
     ].join(', ');
 
-    document.querySelectorAll(featuredSelectors).forEach(card => {
+    this.log('Looking for featured deals with selectors:', featuredSelectors);
+    const featuredCards = document.querySelectorAll(featuredSelectors);
+    this.log('Found featured cards:', featuredCards.length);
+
+    featuredCards.forEach(card => {
       const merchant = this.extractMerchant(card);
       const value = this.extractCashbackRate(card);
       const portalUrl = this.extractPortalUrl(card);
@@ -94,6 +175,60 @@ const RakutenScraper = {
       offers.push({ merchant, value, portalUrl });
     });
 
+    this.log('Total unique merchants collected:', offers.length);
+    return offers;
+  },
+
+  collectMerchantRatesFromModal() {
+    this.log('=== Scraping from modal ===');
+    const offers = [];
+    const seen = new Set();
+
+    // Find the modal body
+    const modalBody = document.querySelector('.chakra-modal__body');
+    if (!modalBody) {
+      this.log('ERROR: Modal body not found');
+      return offers;
+    }
+
+    this.log('Modal body found, looking for merchant links...');
+
+    // Find all merchant links in the modal
+    const merchantLinks = modalBody.querySelectorAll('a.chakra-link');
+    this.log('Found merchant links in modal:', merchantLinks.length);
+
+    merchantLinks.forEach((link, index) => {
+      // Extract merchant name from img alt attribute
+      const img = link.querySelector('img[alt]');
+      let merchant = null;
+
+      if (img && img.alt) {
+        // Remove the " - Rakuten coupons and Cash Back" suffix
+        merchant = img.alt.replace(/ - Rakuten coupons and Cash Back/i, '').trim();
+      }
+
+      // Extract cashback percentage from the span
+      const cashbackSpan = link.querySelector('span.css-1o3lf2p');
+      let value = 'See details';
+
+      if (cashbackSpan) {
+        value = cashbackSpan.textContent.trim();
+      }
+
+      // Extract portal URL
+      const portalUrl = link.href;
+
+      if (index < 3) { // Log first 3 for debugging
+        this.log(`Modal merchant ${index}:`, { merchant, value, portalUrl });
+      }
+
+      if (!merchant || seen.has(merchant.toLowerCase())) return;
+      seen.add(merchant.toLowerCase());
+
+      offers.push({ merchant, value, portalUrl });
+    });
+
+    this.log('Total unique merchants from modal:', offers.length);
     return offers;
   },
 
@@ -159,18 +294,23 @@ const RakutenScraper = {
   },
 
   async checkCurrentSite() {
+    this.log('Checking for Rakuten button/extension on page...');
     // Check for Rakuten button presence
     const rakutenPresent = document.querySelector(
       '[class*="rakuten"], [id*="rakuten"], [data-rakuten], #ebates-notif'
     );
+
+    this.log('Rakuten extension present:', !!rakutenPresent);
 
     if (rakutenPresent) {
       const rateEl = document.querySelector(
         '[class*="cashback"], [class*="rate"], [class*="Cash Back"]'
       );
       const rate = rateEl ? rateEl.textContent.trim() : null;
+      this.log('Detected cashback rate:', rate);
 
       const currentHost = window.location.hostname.replace('www.', '');
+      this.log('Current merchant:', currentHost);
 
       return {
         available: true,
@@ -180,7 +320,33 @@ const RakutenScraper = {
       };
     }
 
+    this.log('No Rakuten button found on page');
     return { available: false };
+  },
+
+  async closeModal() {
+    this.log('Closing modal...');
+
+    // Try multiple selectors for the close button
+    const closeSelectors = [
+      '.chakra-modal__close-btn',
+      'button[aria-label="Close"]',
+      '[data-testid="modal-close"]',
+      '.chakra-modal__header button'
+    ];
+
+    for (const selector of closeSelectors) {
+      const closeButton = document.querySelector(selector);
+      if (closeButton) {
+        this.log('Found close button with selector:', selector);
+        closeButton.click();
+        return;
+      }
+    }
+
+    // Fallback: try pressing ESC key to close modal
+    this.log('No close button found, trying ESC key...');
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', keyCode: 27 }));
   },
 
   detectCategory(merchantName) {
@@ -195,4 +361,5 @@ const RakutenScraper = {
 
 if (typeof window !== 'undefined') {
   window.RakutenScraper = RakutenScraper;
+  console.log('[RMX-Rakuten] Scraper loaded successfully');
 }

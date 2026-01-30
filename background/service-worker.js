@@ -9,6 +9,16 @@ debug.log('[Reward Maximizer] Service worker started');
 // Initialize badge
 chrome.action.setBadgeBackgroundColor({ color: '#2563eb' });
 
+// Sync progress tracking
+let syncProgress = {
+  isRunning: false,
+  currentPortal: null,
+  completed: [],
+  remaining: [],
+  totalOffers: 0,
+  errors: []
+};
+
 // Listen for content script ready messages
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.action === 'content_script_ready') {
@@ -41,6 +51,30 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       sendResponse(result);
     });
     return true;
+  }
+
+  // Sync progress management
+  if (message.action === 'start_sync') {
+    startSyncProgress(message.portal);
+    sendResponse({ success: true });
+    return false;
+  }
+
+  if (message.action === 'complete_sync') {
+    completeSyncProgress(message.portal, message.offersCount);
+    sendResponse({ success: true });
+    return false;
+  }
+
+  if (message.action === 'sync_error') {
+    recordSyncError(message.portal, message.error);
+    sendResponse({ success: true });
+    return false;
+  }
+
+  if (message.action === 'get_sync_progress') {
+    sendResponse({ progress: syncProgress });
+    return false;
   }
 });
 
@@ -153,7 +187,8 @@ function generateId() {
 // Handle extension installation
 chrome.runtime.onInstalled.addListener((details) => {
   if (details.reason === 'install') {
-    console.log('[Reward Maximizer] Extension installed');
+    console.log('[Reward Maximizer] Extension installed - showing welcome page');
+
     // Initialize default settings
     chrome.storage.local.set({
       rmx_settings: {
@@ -163,11 +198,27 @@ chrome.runtime.onInstalled.addListener((details) => {
         defaultView: 'byMerchant'
       },
       rmx_offers: [],
-      rmx_user_cards: [],
-      rmx_point_values: {}
+      rmx_user_cards: [], // Will be populated during onboarding
+      rmx_point_values: {},
+      rmx_onboarding_complete: false
+    });
+
+    // Show welcome page
+    chrome.tabs.create({
+      url: chrome.runtime.getURL('onboarding/welcome.html')
     });
   } else if (details.reason === 'update') {
     console.log('[Reward Maximizer] Extension updated to', chrome.runtime.getManifest().version);
+
+    // Check if user needs to see onboarding
+    chrome.storage.local.get(['rmx_onboarding_complete'], (result) => {
+      if (!result.rmx_onboarding_complete) {
+        // User upgraded from old version without onboarding
+        chrome.tabs.create({
+          url: chrome.runtime.getURL('onboarding/welcome.html')
+        });
+      }
+    });
   }
 });
 
@@ -223,3 +274,112 @@ chrome.alarms.onAlarm.addListener((alarm) => {
     // Could trigger background sync here in future
   }
 });
+
+// Sync progress management functions
+function startSyncProgress(portal) {
+  console.log('[Service Worker] Starting sync for:', portal);
+
+  syncProgress.isRunning = true;
+  syncProgress.currentPortal = portal;
+
+  if (!syncProgress.completed.includes(portal)) {
+    syncProgress.remaining = syncProgress.remaining.filter(p => p !== portal);
+  }
+
+  // Update badge to show progress
+  updateSyncBadge();
+
+  // Save to storage so popup can read it
+  chrome.storage.local.set({ rmx_sync_progress: syncProgress });
+}
+
+function completeSyncProgress(portal, offersCount = 0) {
+  console.log('[Service Worker] Completed sync for:', portal, 'Offers:', offersCount);
+
+  if (!syncProgress.completed.includes(portal)) {
+    syncProgress.completed.push(portal);
+  }
+  syncProgress.remaining = syncProgress.remaining.filter(p => p !== portal);
+  syncProgress.totalOffers += offersCount;
+  syncProgress.currentPortal = null;
+
+  // Check if all syncs complete
+  if (syncProgress.remaining.length === 0 && syncProgress.isRunning) {
+    finishAllSyncs();
+  } else {
+    updateSyncBadge();
+    chrome.storage.local.set({ rmx_sync_progress: syncProgress });
+  }
+}
+
+function recordSyncError(portal, error) {
+  console.error('[Service Worker] Sync error for:', portal, error);
+
+  syncProgress.errors.push({ portal, error, timestamp: Date.now() });
+
+  if (!syncProgress.completed.includes(portal)) {
+    syncProgress.completed.push(portal); // Mark as "done" even if error
+  }
+  syncProgress.remaining = syncProgress.remaining.filter(p => p !== portal);
+  syncProgress.currentPortal = null;
+
+  // Check if all syncs complete
+  if (syncProgress.remaining.length === 0 && syncProgress.isRunning) {
+    finishAllSyncs();
+  } else {
+    updateSyncBadge();
+    chrome.storage.local.set({ rmx_sync_progress: syncProgress });
+  }
+}
+
+function updateSyncBadge() {
+  const total = syncProgress.completed.length + syncProgress.remaining.length;
+  const completed = syncProgress.completed.length;
+
+  if (syncProgress.isRunning && total > 0) {
+    chrome.action.setBadgeText({ text: `${completed}/${total}` });
+    chrome.action.setBadgeBackgroundColor({ color: '#2563eb' });
+  }
+}
+
+function finishAllSyncs() {
+  console.log('[Service Worker] All syncs complete!');
+
+  syncProgress.isRunning = false;
+
+  // Show completion notification
+  const successCount = syncProgress.completed.length - syncProgress.errors.length;
+  const message = syncProgress.errors.length > 0
+    ? `Synced ${successCount}/${syncProgress.completed.length} portals. ${syncProgress.totalOffers} total offers.`
+    : `Successfully synced ${syncProgress.totalOffers} offers from ${syncProgress.completed.length} portals!`;
+
+  chrome.notifications.create({
+    type: 'basic',
+    iconUrl: '../icons/icon128.png',
+    title: 'Sync Complete! 🎉',
+    message: message,
+    priority: 1
+  });
+
+  // Reset badge to show total offers
+  getOffersFromStorage().then(offers => {
+    chrome.action.setBadgeText({ text: offers.length > 0 ? offers.length.toString() : '' });
+    chrome.action.setBadgeBackgroundColor({ color: '#059669' });
+  });
+
+  // Save final state
+  chrome.storage.local.set({ rmx_sync_progress: syncProgress });
+
+  // Clear after 30 seconds
+  setTimeout(() => {
+    syncProgress = {
+      isRunning: false,
+      currentPortal: null,
+      completed: [],
+      remaining: [],
+      totalOffers: 0,
+      errors: []
+    };
+    chrome.storage.local.remove('rmx_sync_progress');
+  }, 30000);
+}

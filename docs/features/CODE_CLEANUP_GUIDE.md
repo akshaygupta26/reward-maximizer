@@ -9,6 +9,15 @@ The debug system has been set up and integrated into all scripts:
 - ✅ Added to background service worker
 - ✅ Updated storage.js to use debug utility
 
+## ⚠️ Note on Current Console Logs (2026-01-28)
+
+During recent debugging sessions, additional `console.log()` statements were added to:
+- `popup/popup.js` - Extensive logging for sync flow debugging
+- `lib/storage.js` - Detailed logging for save operations
+- `content/content-main.js` - Auto-sync and navigation logging
+
+These should be replaced with `debug.log()` before production, or removed if temporary.
+
 ## 🎯 How It Works
 
 ### Development Mode (Current)
