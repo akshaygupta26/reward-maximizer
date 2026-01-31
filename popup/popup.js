@@ -1,13 +1,13 @@
 // Popup JavaScript - Main Controller
 
-console.log('[RMX-Popup] ========================================');
-console.log('[RMX-Popup] Popup script loading...');
-console.log('[RMX-Popup] ========================================');
+debug.log('[RMX-Popup] ========================================');
+debug.log('[RMX-Popup] Popup script loading...');
+debug.log('[RMX-Popup] ========================================');
 
 document.addEventListener('DOMContentLoaded', async () => {
-  console.log('[RMX-Popup] DOM Content Loaded');
-  console.log('[RMX-Popup] Storage available:', typeof Storage !== 'undefined');
-  console.log('[RMX-Popup] ExportUtils available:', typeof ExportUtils !== 'undefined');
+  debug.log('[RMX-Popup] DOM Content Loaded');
+  debug.log('[RMX-Popup] Storage available:', typeof Storage !== 'undefined');
+  debug.log('[RMX-Popup] ExportUtils available:', typeof ExportUtils !== 'undefined');
 
   // State
   let offers = [];
@@ -30,21 +30,21 @@ document.addEventListener('DOMContentLoaded', async () => {
   const viewToggle = document.querySelector('.view-toggle');
 
   // Initialize
-  console.log('[RMX-Popup] Starting initialization...');
+  debug.log('[RMX-Popup] Starting initialization...');
   await loadData();
-  console.log('[RMX-Popup] Initializing user cards...');
+  debug.log('[RMX-Popup] Initializing user cards...');
   await initializeUserCards();
-  console.log('[RMX-Popup] Setting up event listeners...');
+  debug.log('[RMX-Popup] Setting up event listeners...');
   setupEventListeners();
-  console.log('[RMX-Popup] Applying initial filters...');
+  debug.log('[RMX-Popup] Applying initial filters...');
   applyFilters(); // Populate filteredOffers from offers
-  console.log('[RMX-Popup] Checking for ongoing sync...');
+  debug.log('[RMX-Popup] Checking for ongoing sync...');
   await checkSyncProgress();
-  console.log('[RMX-Popup] Detecting current merchant...');
+  debug.log('[RMX-Popup] Detecting current merchant...');
   await detectCurrentMerchant();
-  console.log('[RMX-Popup] Rendering UI...');
+  debug.log('[RMX-Popup] Rendering UI...');
   render();
-  console.log('[RMX-Popup] ✅ Initialization complete! Offers:', offers.length, 'Filtered:', filteredOffers.length);
+  debug.log('[RMX-Popup] ✅ Initialization complete! Offers:', offers.length, 'Filtered:', filteredOffers.length);
 
   // Check for ongoing sync progress
   async function checkSyncProgress() {
@@ -62,7 +62,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
       }
     } catch (err) {
-      console.error('[RMX-Popup] Error checking sync progress:', err);
+      debug.error('[RMX-Popup] Error checking sync progress:', err);
     }
   }
 
@@ -72,7 +72,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       // Get current tab
       const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
       if (!tab || !tab.url) {
-        console.log('[RMX-Popup] No active tab found');
+        debug.log('[RMX-Popup] No active tab found');
         return;
       }
 
@@ -87,13 +87,13 @@ document.addEventListener('DOMContentLoaded', async () => {
       ];
 
       if (portalSites.some(site => hostname.includes(site))) {
-        console.log('[RMX-Popup] On portal site, skipping auto-filter');
+        debug.log('[RMX-Popup] On portal site, skipping auto-filter');
         return;
       }
 
       // Extract merchant name from hostname
       const merchantName = hostname.split('.')[0];
-      console.log('[RMX-Popup] Checking for offers matching:', merchantName);
+      debug.log('[RMX-Popup] Checking for offers matching:', merchantName);
 
       // Find matching offers using fuzzy matching
       const matchingOffers = offers.filter(offer => {
@@ -105,7 +105,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       });
 
       if (matchingOffers.length > 0) {
-        console.log('[RMX-Popup] Found', matchingOffers.length, 'offers for current site');
+        debug.log('[RMX-Popup] Found', matchingOffers.length, 'offers for current site');
 
         // Auto-populate search with merchant name
         searchQuery = matchingOffers[0].merchant.toLowerCase();
@@ -125,27 +125,27 @@ document.addEventListener('DOMContentLoaded', async () => {
         }, 2000);
       }
     } catch (err) {
-      console.error('[RMX-Popup] Error detecting current merchant:', err);
+      debug.error('[RMX-Popup] Error detecting current merchant:', err);
     }
   }
 
   // Load data from storage
   async function loadData() {
-    console.log('[RMX-Popup] ========== loadData START ==========');
-    console.log('[RMX-Popup] Calling Storage.getOffers()...');
+    debug.log('[RMX-Popup] ========== loadData START ==========');
+    debug.log('[RMX-Popup] Calling Storage.getOffers()...');
     try {
       offers = await Storage.getOffers();
-      console.log('[RMX-Popup] ✅ Got', offers.length, 'offers from storage');
+      debug.log('[RMX-Popup] ✅ Got', offers.length, 'offers from storage');
       if (offers.length > 0) {
-        console.log('[RMX-Popup] First offer:', JSON.stringify(offers[0]).substring(0, 200));
+        debug.log('[RMX-Popup] First offer:', JSON.stringify(offers[0]).substring(0, 200));
       } else {
-        console.warn('[RMX-Popup] ⚠️ No offers found in storage');
+        debug.warn('[RMX-Popup] ⚠️ No offers found in storage');
       }
       customPointValues = await Storage.getPointValues();
       updateStatus(`${offers.length} offers loaded`, 'success');
-      console.log('[RMX-Popup] ========== loadData END ==========');
+      debug.log('[RMX-Popup] ========== loadData END ==========');
     } catch (err) {
-      console.error('[RMX-Popup] ❌ ERROR in loadData:', err);
+      debug.error('[RMX-Popup] ❌ ERROR in loadData:', err);
       updateStatus('Failed to load offers', 'error');
     }
   }
@@ -156,11 +156,11 @@ document.addEventListener('DOMContentLoaded', async () => {
       chrome.storage.local.get(['rmx_user_cards'], (result) => {
         const userCards = result.rmx_user_cards || [];
 
-        console.log('[RMX-Popup] User cards from storage:', userCards);
+        debug.log('[RMX-Popup] User cards from storage:', userCards);
 
         // If no cards selected, show all (backward compatibility for existing users)
         if (userCards.length === 0) {
-          console.log('[RMX-Popup] No cards selected, showing all buttons');
+          debug.log('[RMX-Popup] No cards selected, showing all buttons');
           resolve();
           return;
         }
@@ -170,10 +170,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         allButtons.forEach(btn => {
           const source = btn.dataset.source;
           if (!userCards.includes(source)) {
-            console.log('[RMX-Popup] Hiding button for:', source);
+            debug.log('[RMX-Popup] Hiding button for:', source);
             btn.style.display = 'none';
           } else {
-            console.log('[RMX-Popup] Showing button for:', source);
+            debug.log('[RMX-Popup] Showing button for:', source);
             btn.style.display = '';
           }
         });
@@ -236,7 +236,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Sync all portals sequentially
   async function syncAll() {
-    console.log('[RMX-Popup] Starting Sync All...');
+    debug.log('[RMX-Popup] Starting Sync All...');
 
     // Get user's selected cards from storage
     const result = await new Promise(resolve => {
@@ -247,10 +247,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // If no cards selected, use all portals (backward compatibility)
     if (portals.length === 0) {
-      portals = ['amex', 'chase', 'citi', 'capital-one', 'discover', 'bofa', 'usbank', 'rakuten'];
-      console.log('[RMX-Popup] No user cards set, syncing all portals');
+      portals = ['amex', 'chase', 'citi', 'capital-one', 'discover', 'bofa', 'usbank', 'rakuten', 'capital-one-shopping'];
+      debug.log('[RMX-Popup] No user cards set, syncing all portals');
     } else {
-      console.log('[RMX-Popup] Syncing user-selected portals:', portals);
+      debug.log('[RMX-Popup] Syncing user-selected portals:', portals);
     }
 
     const syncAllBtn = document.getElementById('syncAllBtn');
@@ -285,7 +285,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       // Sync each portal
       for (let i = 0; i < portals.length; i++) {
         const portal = portals[i];
-        console.log(`[RMX-Popup] Syncing ${i + 1}/${portals.length}: ${portal}`);
+        debug.log(`[RMX-Popup] Syncing ${i + 1}/${portals.length}: ${portal}`);
 
         syncAllBtn.textContent = `Syncing ${portal}... (${i + 1}/${portals.length})`;
         updateStatus(`Syncing ${portal}... (${i + 1}/${portals.length})`, 'success');
@@ -308,7 +308,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       render();
 
     } catch (err) {
-      console.error('[RMX-Popup] Sync All failed:', err);
+      debug.error('[RMX-Popup] Sync All failed:', err);
       updateStatus(`Sync All failed: ${err.message}`, 'error');
     } finally {
       syncAllBtn.disabled = false;
@@ -318,8 +318,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Sync a specific source
   async function syncSource(source) {
-    console.log('[RMX-Popup] ========== SYNC STARTED ==========');
-    console.log('[RMX-Popup] Syncing source:', source);
+    debug.log('[RMX-Popup] ========== SYNC STARTED ==========');
+    debug.log('[RMX-Popup] Syncing source:', source);
 
     const btn = document.querySelector(`.sync-btn.${source}`);
     const originalText = btn.textContent;
@@ -332,7 +332,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       // Get active tab
       const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-      console.log('[RMX-Popup] Active tab:', tab?.url);
+      debug.log('[RMX-Popup] Active tab:', tab?.url);
 
       if (!tab || !tab.url) {
         throw new Error('No active tab found');
@@ -343,7 +343,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         'amex': 'https://global.americanexpress.com/offers/eligible',
         'chase': 'https://secure.chase.com/web/auth/dashboard#/dashboard/merchantOffers/offer-hub',
         'citi': 'https://online.citi.com/US/ag/merchantoffers',
-        'capital-one': 'https://www.capitaloneshopping.com/',
+        'capital-one': 'https://www.capitalone.com/',
+        'capital-one-shopping': 'https://www.capitaloneshopping.com/',
         'discover': 'https://card.discover.com/cardmembersvcs/deals/app/home',
         'bofa': 'https://www.bankofamerica.com/credit-cards/deals-and-offers/',
         'usbank': 'https://www.usbank.com/deals.html',
@@ -355,7 +356,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         'amex': 'americanexpress.com',
         'chase': 'chase.com',
         'citi': 'citi',
-        'capital-one': 'capitalone',
+        'capital-one': 'capitalone.com',
+        'capital-one-shopping': 'capitaloneshopping',
         'discover': 'discover.com',
         'bofa': 'bankofamerica',
         'usbank': 'usbank.com',
@@ -370,7 +372,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       // If not on the right portal, navigate there
       if (!tab.url.toLowerCase().includes(expectedDomains[source])) {
-        console.log('[RMX-Popup] Not on', source, 'portal. Navigating to:', portalUrls[source]);
+        debug.log('[RMX-Popup] Not on', source, 'portal. Navigating to:', portalUrls[source]);
         btn.textContent = 'Opening...';
         updateStatus(`Opening ${source} offers page...`, 'success');
 
@@ -409,15 +411,15 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
 
       if (response?.offers && response.offers.length > 0) {
-        console.log('[RMX-Popup] ========== SYNC SUCCESS ==========');
-        console.log('[RMX-Popup] Received', response.offers.length, 'offers from scraper');
-        console.log('[RMX-Popup] Sample offer:', JSON.stringify(response.offers[0]));
-        console.log('[RMX-Popup] Source:', source);
+        debug.log('[RMX-Popup] ========== SYNC SUCCESS ==========');
+        debug.log('[RMX-Popup] Received', response.offers.length, 'offers from scraper');
+        debug.log('[RMX-Popup] Sample offer:', JSON.stringify(response.offers[0]));
+        debug.log('[RMX-Popup] Source:', source);
 
         // Save offers
-        console.log('[RMX-Popup] Calling Storage.saveOffers...');
+        debug.log('[RMX-Popup] Calling Storage.saveOffers...');
         const result = await Storage.saveOffers(response.offers, source);
-        console.log('[RMX-Popup] ✅ Storage.saveOffers completed. Result:', result);
+        debug.log('[RMX-Popup] ✅ Storage.saveOffers completed. Result:', result);
 
         await Storage.updateSyncHistory(source);
 
@@ -429,16 +431,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
 
         // Reload data
-        console.log('[RMX-Popup] Reloading data from storage...');
+        debug.log('[RMX-Popup] Reloading data from storage...');
         await loadData();
-        console.log('[RMX-Popup] After reload, offers count:', offers.length);
+        debug.log('[RMX-Popup] After reload, offers count:', offers.length);
 
         applyFilters();
         render();
 
         updateStatus(`Synced ${response.offers.length} offers (${result.added} new)`, 'success');
       } else {
-        console.log('[RMX-Popup] No offers received from scraper. Response:', response);
+        debug.log('[RMX-Popup] No offers received from scraper. Response:', response);
 
         // Notify service worker (0 offers but successful)
         await chrome.runtime.sendMessage({
@@ -450,7 +452,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         updateStatus('No new offers found', 'success');
       }
     } catch (err) {
-      console.error('Sync failed:', err);
+      debug.error('[RMX-Popup] Sync failed:', err);
 
       // Notify service worker of error
       await chrome.runtime.sendMessage({
@@ -469,14 +471,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Send message to content script
   function sendMessageToTab(tabId, message) {
-    console.log('[RMX-Popup] Sending message to tab', tabId, ':', message);
+    debug.log('[RMX-Popup] Sending message to tab', tabId, ':', message);
     return new Promise((resolve) => {
       chrome.tabs.sendMessage(tabId, message, (response) => {
         if (chrome.runtime.lastError) {
-          console.error('[RMX-Popup] Message error:', chrome.runtime.lastError.message);
+          debug.error('[RMX-Popup] Message error:', chrome.runtime.lastError.message);
           resolve({ error: chrome.runtime.lastError.message });
         } else {
-          console.log('[RMX-Popup] Received response:', response);
+          debug.log('[RMX-Popup] Received response:', response);
           resolve(response);
         }
       });
@@ -718,7 +720,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Show export menu
   function showExportMenu() {
-    console.log('[RMX-Popup] Export button clicked. Offers count:', offers.length, 'Filtered:', filteredOffers.length);
+    debug.log('[RMX-Popup] Export button clicked. Offers count:', offers.length, 'Filtered:', filteredOffers.length);
 
     const menu = document.createElement('div');
     menu.style.cssText = `
@@ -744,13 +746,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.body.appendChild(menu);
 
     menu.querySelector('#exportCSV').addEventListener('click', () => {
-      console.log('[RMX-Popup] Exporting CSV...');
+      debug.log('[RMX-Popup] Exporting CSV...');
       ExportUtils.exportCSV(filteredOffers);
       menu.remove();
     });
 
     menu.querySelector('#exportJSON').addEventListener('click', () => {
-      console.log('[RMX-Popup] Exporting JSON...');
+      debug.log('[RMX-Popup] Exporting JSON...');
       ExportUtils.exportJSON(filteredOffers);
       menu.remove();
     });

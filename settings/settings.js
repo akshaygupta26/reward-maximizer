@@ -36,7 +36,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     return new Promise((resolve) => {
       chrome.storage.local.get(['rmx_user_cards'], (result) => {
         const userPortals = result.rmx_user_cards || [];
-        console.log('[Settings] Loading user portals:', userPortals);
+        debug.log('[RMX-Settings] Loading user portals:', userPortals);
 
         // Check the appropriate checkboxes
         document.querySelectorAll('.portal-checkbox input[type="checkbox"][data-portal="true"]').forEach(checkbox => {
@@ -60,7 +60,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
     });
 
-    console.log('[Settings] Saving portals:', selectedPortals);
+    debug.log('[RMX-Settings] Saving portals:', selectedPortals);
 
     if (selectedPortals.length === 0) {
       showToast('Please select at least one portal', 'error');
@@ -69,7 +69,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     return new Promise((resolve) => {
       chrome.storage.local.set({ rmx_user_cards: selectedPortals }, () => {
-        console.log('[Settings] ✅ Portals saved successfully');
+        debug.log('[RMX-Settings] ✅ Portals saved successfully');
         showToast('Card selection saved! Popup will update on next open.', 'success');
         resolve();
       });
