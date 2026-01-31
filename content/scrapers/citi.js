@@ -28,7 +28,7 @@ const CitiScraper = {
             added++;
             await this.wait(1000);
           } catch (err) {
-            console.warn('[RMX-Citi] Failed to click offer:', err);
+            debug.warn('[RMX-Citi] Failed to click offer:', err);
           }
         }
       }
@@ -44,7 +44,7 @@ const CitiScraper = {
 
       return { offers: cleaned, added, totalFound: cleaned.length };
     } catch (err) {
-      console.error('[RMX-Citi] Scrape failed:', err);
+      debug.error('[RMX-Citi] Scrape failed:', err);
       return { offers: [], added: 0, totalFound: 0 };
     }
   },
@@ -56,7 +56,7 @@ const CitiScraper = {
         expandBtn.click();
         await this.wait(1500);
       } catch (err) {
-        console.warn('[Reward Maximizer] Unable to expand Citi offers:', err);
+        debug.warn('[RMX-Citi] Unable to expand offers:', err);
       }
     }
 

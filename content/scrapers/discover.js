@@ -28,7 +28,7 @@ const DiscoverScraper = {
             added++;
             await this.wait(1000);
           } catch (err) {
-            console.warn('[RMX-Discover] Failed to click offer:', err);
+            debug.warn('[RMX-Discover] Failed to click offer:', err);
           }
         }
       }
@@ -44,7 +44,7 @@ const DiscoverScraper = {
 
       return { offers: cleaned, added, totalFound: cleaned.length };
     } catch (err) {
-      console.error('[RMX-Discover] Scrape failed:', err);
+      debug.error('[RMX-Discover] Scrape failed:', err);
       return { offers: [], added: 0, totalFound: 0 };
     }
   },
@@ -56,7 +56,7 @@ const DiscoverScraper = {
         expandBtn.click();
         await this.wait(1500);
       } catch (err) {
-        console.warn('[RMX-Discover] Failed to expand offers:', err);
+        debug.warn('[RMX-Discover] Failed to expand offers:', err);
       }
     }
     await this.scrollToLoad();

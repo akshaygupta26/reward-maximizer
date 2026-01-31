@@ -4,13 +4,9 @@
 const AmexScraper = {
   source: 'amex',
   offersUrl: 'https://global.americanexpress.com/offers/eligible',
-  debug: true, // Enable detailed logging
-
   // Logging helper
   log(...args) {
-    if (this.debug) {
-      console.log('[RMX-Amex]', ...args);
-    }
+    debug.log('[RMX-Amex]', ...args);
   },
 
   // Check if we need to navigate to offers page
@@ -38,74 +34,79 @@ const AmexScraper = {
 
   // Main scrape function
   async scrape() {
-    this.log('Starting Amex scrape...');
-    this.log('Current URL:', window.location.href);
+    try {
+      this.log('Starting Amex scrape...');
+      this.log('Current URL:', window.location.href);
 
-    // Wait for page to stabilize
-    await this.wait(2000);
+      // Wait for page to stabilize
+      await this.wait(2000);
 
-    // Expand and load all offers
-    await this.expandOffers();
+      // Expand and load all offers
+      await this.expandOffers();
 
-    // First pass: collect all offer data WITHOUT clicking
-    const offers = this.collectOffers();
-    this.log(`Found ${offers.length} merchant offers to process`);
+      // First pass: collect all offer data WITHOUT clicking
+      const offers = this.collectOffers();
+      this.log(`Found ${offers.length} merchant offers to process`);
 
-    // Store collected offer data (without button references)
-    const collectedOffers = offers.map(offer => ({
-      merchant: offer.merchant,
-      value: offer.value,
-      expiry: offer.expiry,
-      merchantCategory: this.detectCategory(offer.merchant),
-      valueType: this.parseValueType(offer.value),
-      timestamp: Date.now()
-    }));
+      // Store collected offer data (without button references)
+      const collectedOffers = offers.map(offer => ({
+        merchant: offer.merchant,
+        value: offer.value,
+        expiry: offer.expiry,
+        merchantCategory: this.detectCategory(offer.merchant),
+        valueType: this.parseValueType(offer.value),
+        timestamp: Date.now()
+      }));
 
-    // Second pass: click ALL add buttons one by one
-    // Re-query the DOM for each click to handle dynamic updates
-    let added = 0;
-    let maxAttempts = 100; // Safety limit
-    let attempts = 0;
+      // Second pass: click ALL add buttons one by one
+      // Re-query the DOM for each click to handle dynamic updates
+      let added = 0;
+      let maxAttempts = 100; // Safety limit
+      let attempts = 0;
 
-    while (attempts < maxAttempts) {
-      attempts++;
+      while (attempts < maxAttempts) {
+        attempts++;
 
-      // Find the FIRST available (not yet clicked) add button
-      const addButtons = document.querySelectorAll('button[data-testid="merchantOfferListAddButton"]');
-      let clickedOne = false;
+        // Find the FIRST available (not yet clicked) add button
+        const addButtons = document.querySelectorAll('button[data-testid="merchantOfferListAddButton"]');
+        let clickedOne = false;
 
-      for (const btn of addButtons) {
-        // Skip if disabled or already processed (button might change after click)
-        if (btn.disabled) continue;
+        for (const btn of addButtons) {
+          // Skip if disabled or already processed (button might change after click)
+          if (btn.disabled) continue;
 
-        // Check if button is still clickable (not in "added" state)
-        const btnText = (btn.textContent || '').toLowerCase();
-        const btnTitle = (btn.getAttribute('title') || '').toLowerCase();
-        if (btnText.includes('added') || btnTitle.includes('added')) continue;
+          // Check if button is still clickable (not in "added" state)
+          const btnText = (btn.textContent || '').toLowerCase();
+          const btnTitle = (btn.getAttribute('title') || '').toLowerCase();
+          if (btnText.includes('added') || btnTitle.includes('added')) continue;
 
-        try {
-          this.log(`Clicking add button ${added + 1}...`);
-          btn.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          await this.wait(300);
-          btn.click();
-          added++;
-          clickedOne = true;
-          await this.wait(1000); // Wait for Amex to process
-          break; // Process one at a time, then re-query
-        } catch (err) {
-          this.log('Failed to click button:', err);
+          try {
+            this.log(`Clicking add button ${added + 1}...`);
+            btn.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            await this.wait(300);
+            btn.click();
+            added++;
+            clickedOne = true;
+            await this.wait(1000); // Wait for Amex to process
+            break; // Process one at a time, then re-query
+          } catch (err) {
+            this.log('Failed to click button:', err);
+          }
+        }
+
+        // If we didn't click anything this round, we're done
+        if (!clickedOne) {
+          this.log('No more buttons to click');
+          break;
         }
       }
 
-      // If we didn't click anything this round, we're done
-      if (!clickedOne) {
-        this.log('No more buttons to click');
-        break;
-      }
+      this.log(`Scrape complete: ${collectedOffers.length} offers found, ${added} clicked`);
+      return { offers: collectedOffers, added, totalFound: collectedOffers.length };
+    } catch (err) {
+      debug.error('[RMX-Amex] Scrape failed:', err);
+      return { offers: [], added: 0, totalFound: 0 };
     }
-
-    this.log(`Scrape complete: ${collectedOffers.length} offers found, ${added} clicked`);
-    return { offers: collectedOffers, added, totalFound: collectedOffers.length };
   },
 
   // Expand offers by clicking "View All" and scrolling

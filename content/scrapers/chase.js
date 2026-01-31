@@ -4,14 +4,11 @@
 const ChaseScraper = {
   source: 'chase',
   offersUrl: 'https://secure.chase.com/web/auth/dashboard#/dashboard/merchantOffers/offer-hub',
-  debug: true,
   originalUrl: null, // Store original URL for navigation back
   isRunning: false,
 
   log(...args) {
-    if (this.debug) {
-      console.log('[RMX-Chase]', ...args);
-    }
+    debug.log('[RMX-Chase]', ...args);
   },
 
   // Check if we need to navigate to offers page
@@ -32,38 +29,43 @@ const ChaseScraper = {
 
   // Main scrape function
   async scrape() {
-    this.log('Starting Chase scrape...');
-    this.log('Current URL:', window.location.href);
+    try {
+      this.log('Starting Chase scrape...');
+      this.log('Current URL:', window.location.href);
 
-    // Store the original URL for reliable navigation back
-    this.originalUrl = window.location.href;
-    this.isRunning = true;
+      // Store the original URL for reliable navigation back
+      this.originalUrl = window.location.href;
+      this.isRunning = true;
 
-    // Wait for page to load
-    await this.wait(2000);
+      // Wait for page to load
+      await this.wait(2000);
 
-    // Scroll to load all offers
-    await this.scrollToLoad();
+      // Scroll to load all offers
+      await this.scrollToLoad();
 
-    // Collect offers from the page (first pass - get all offer data)
-    const offers = this.collectOffers();
-    this.log('Collected', offers.length, 'offers to display');
+      // Collect offers from the page (first pass - get all offer data)
+      const offers = this.collectOffers();
+      this.log('Collected', offers.length, 'offers to display');
 
-    // Auto opt-in by clicking + buttons (using proven click-and-return method)
-    const added = await this.clickAndReturn();
+      // Auto opt-in by clicking + buttons (using proven click-and-return method)
+      const added = await this.clickAndReturn();
 
-    // Clean offers for storage (remove any DOM references)
-    const cleaned = offers.map(offer => ({
-      merchant: offer.merchant,
-      value: offer.value,
-      expiry: offer.expiry || 'Check portal',
-      merchantCategory: this.detectCategory(offer.merchant),
-      valueType: this.parseValueType(offer.value),
-      timestamp: Date.now()
-    }));
+      // Clean offers for storage (remove any DOM references)
+      const cleaned = offers.map(offer => ({
+        merchant: offer.merchant,
+        value: offer.value,
+        expiry: offer.expiry || 'Check portal',
+        merchantCategory: this.detectCategory(offer.merchant),
+        valueType: this.parseValueType(offer.value),
+        timestamp: Date.now()
+      }));
 
-    this.log('Scrape complete:', cleaned.length, 'offers,', added, 'opted in');
-    return { offers: cleaned, added, totalFound: cleaned.length };
+      this.log('Scrape complete:', cleaned.length, 'offers,', added, 'opted in');
+      return { offers: cleaned, added, totalFound: cleaned.length };
+    } catch (err) {
+      debug.error('[RMX-Chase] Scrape failed:', err);
+      return { offers: [], added: 0, totalFound: 0 };
+    }
   },
 
   // Click offers one at a time with navigation (proven approach)

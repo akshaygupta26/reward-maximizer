@@ -83,7 +83,7 @@ const ContentUtils = {
       await this.wait(waitAfter);
       return true;
     } catch (err) {
-      console.warn('Reward Maximizer: click failed', err);
+      debug.warn('[Reward Maximizer] click failed', err);
       return false;
     }
   },
@@ -261,15 +261,15 @@ const ContentUtils = {
 
   // Log with prefix
   log(...args) {
-    console.log('[Reward Maximizer]', ...args);
+    debug.log('[Reward Maximizer]', ...args);
   },
 
   warn(...args) {
-    console.warn('[Reward Maximizer]', ...args);
+    debug.warn('[Reward Maximizer]', ...args);
   },
 
   error(...args) {
-    console.error('[Reward Maximizer]', ...args);
+    debug.error('[Reward Maximizer]', ...args);
   }
 };
 

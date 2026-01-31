@@ -4,13 +4,9 @@
 const RakutenScraper = {
   source: 'rakuten',
   offersUrl: 'https://www.rakuten.com/stores',
-  debug: true, // Enable detailed logging
-
   // Logging helper
   log(...args) {
-    if (this.debug) {
-      console.log('[RMX-Rakuten]', ...args);
-    }
+    debug.log('[RMX-Rakuten]', ...args);
   },
 
   needsNavigation() {
@@ -36,7 +32,7 @@ const RakutenScraper = {
       // On other sites, check for Rakuten button/extension
       return await this.checkCurrentSite();
     } catch (err) {
-      console.error('[RMX-Rakuten] Scrape failed:', err);
+      debug.error('[RMX-Rakuten] Scrape failed:', err);
       return { offers: [], added: 0, totalFound: 0 };
     }
   },
@@ -110,7 +106,7 @@ const RakutenScraper = {
     }
 
     const result = { offers: cleaned, added: 0, totalFound: cleaned.length };
-    console.log('[RMX-Rakuten] RETURNING TO POPUP:', JSON.stringify({
+    debug.log('[RMX-Rakuten] RETURNING TO POPUP:', JSON.stringify({
       offersCount: result.offers.length,
       sample: result.offers[0]
     }));
@@ -244,7 +240,7 @@ const RakutenScraper = {
     this.log('Total unique merchants from modal:', offers.length);
     return offers;
     } catch (err) {
-      console.error('[RMX-Rakuten] collectMerchantRatesFromModal failed:', err);
+      debug.error('[RMX-Rakuten] collectMerchantRatesFromModal failed:', err);
       return [];
     }
   },
@@ -378,5 +374,5 @@ const RakutenScraper = {
 
 if (typeof window !== 'undefined') {
   window.RakutenScraper = RakutenScraper;
-  console.log('[RMX-Rakuten] Scraper loaded successfully');
+  debug.log('[RMX-Rakuten] Scraper loaded successfully');
 }

@@ -1,7 +1,7 @@
 // Main content script coordinator
 // Routes messages to appropriate scrapers based on current site
 
-console.log('[Reward Maximizer] Content script loaded');
+debug.log('[RMX-Content] Content script loaded');
 
 const AUTO_SYNC_KEY = 'rmx_auto_sync';
 
@@ -12,12 +12,12 @@ function detectSite() {
   if (host.includes('americanexpress.com')) return 'amex';
   if (host.includes('chase.com')) return 'chase';
   if (host.includes('citi.com') || host.includes('citibank.com')) return 'citi';
+  if (host.includes('capitaloneshopping.com')) return 'capital-one-shopping';
   if (host.includes('capitalone.com')) return 'capital-one';
   if (host.includes('discover.com')) return 'discover';
   if (host.includes('bankofamerica.com') || host.includes('bofa.com')) return 'bofa';
   if (host.includes('usbank.com')) return 'usbank';
   if (host.includes('rakuten.com')) return 'rakuten';
-  if (host.includes('capitaloneshopping.com')) return 'capital-one-shopping';
 
   return null;
 }
@@ -81,10 +81,10 @@ async function handleScrapeRequest(sendResponse) {
     }
 
     // Run the scraper
-    console.log('[RMX-Content] About to run scraper for', site);
+    debug.log('[RMX-Content] About to run scraper for', site);
     const result = await scraper.scrape();
-    console.log('[RMX-Content] Scraper completed. Offers count:', result.offers?.length);
-    console.log('[RMX-Content] Sending response to popup:', {
+    debug.log('[RMX-Content] Scraper completed. Offers count:', result.offers?.length);
+    debug.log('[RMX-Content] Sending response to popup:', {
       site,
       offersCount: result.offers?.length,
       sample: result.offers?.[0]
@@ -98,9 +98,9 @@ async function handleScrapeRequest(sendResponse) {
     };
 
     sendResponse(response);
-    console.log('[RMX-Content] ✅ Response sent to popup');
+    debug.log('[RMX-Content] Response sent to popup');
   } catch (err) {
-    console.error('[Reward Maximizer] Scrape failed:', err);
+    debug.error('[RMX-Content] Scrape failed:', err);
     sendResponse({ error: err?.message || 'scrape_failed', site });
   }
 }
@@ -130,7 +130,7 @@ async function autoSyncIfPending() {
       status: 'running'
     }));
 
-    console.log('[Reward Maximizer] Auto-sync starting for', currentSite);
+    debug.log('[RMX-Content] Auto-sync starting for', currentSite);
 
     const result = await scraper.scrape();
 
@@ -139,9 +139,9 @@ async function autoSyncIfPending() {
       await mergeAndStoreOffers(result.offers, currentSite);
     }
 
-    console.log('[Reward Maximizer] Auto-sync complete:', result.offers?.length, 'offers');
+    debug.log('[RMX-Content] Auto-sync complete:', result.offers?.length, 'offers');
   } catch (err) {
-    console.warn('[Reward Maximizer] Auto-sync failed:', err);
+    debug.warn('[RMX-Content] Auto-sync failed:', err);
   } finally {
     localStorage.removeItem(AUTO_SYNC_KEY);
   }
@@ -218,7 +218,7 @@ async function checkPendingSyncFromPopup() {
 
     // Check if this is the site we were waiting for
     if (currentSite === source) {
-      console.log('[RMX-Content] Found pending sync from popup for', source);
+      debug.log('[RMX-Content] Found pending sync from popup for', source);
 
       // Clear the flag
       await chrome.storage.local.remove('rmx_pending_sync');
@@ -228,7 +228,7 @@ async function checkPendingSyncFromPopup() {
         const scraper = getScraper(currentSite);
         if (!scraper) return;
 
-        console.log('[RMX-Content] Auto-syncing after navigation...');
+        debug.log('[RMX-Content] Auto-syncing after navigation...');
 
         // Notify service worker sync is starting
         chrome.runtime.sendMessage({
@@ -240,7 +240,7 @@ async function checkPendingSyncFromPopup() {
           const result = await scraper.scrape();
           if (result.offers && result.offers.length > 0) {
             await mergeAndStoreOffers(result.offers, currentSite);
-            console.log('[RMX-Content] ✅ Auto-sync complete:', result.offers.length, 'offers saved');
+            debug.log('[RMX-Content] Auto-sync complete:', result.offers.length, 'offers saved');
 
             // Notify service worker of successful sync
             chrome.runtime.sendMessage({
@@ -257,7 +257,7 @@ async function checkPendingSyncFromPopup() {
             }).catch(() => {});
           }
         } catch (err) {
-          console.error('[RMX-Content] Auto-sync failed:', err);
+          debug.error('[RMX-Content] Auto-sync failed:', err);
 
           // Notify service worker of error
           chrome.runtime.sendMessage({
@@ -269,7 +269,7 @@ async function checkPendingSyncFromPopup() {
       }, 2000); // Wait 2 seconds for page to fully load
     }
   } catch (err) {
-    console.error('[RMX-Content] Error checking pending sync:', err);
+    debug.error('[RMX-Content] Error checking pending sync:', err);
   }
 }
 

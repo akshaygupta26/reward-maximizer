@@ -28,7 +28,7 @@ const USBankScraper = {
             added++;
             await this.wait(1000);
           } catch (err) {
-            console.warn('[RMX-USBank] Failed to click offer:', err);
+            debug.warn('[RMX-USBank] Failed to click offer:', err);
           }
         }
       }
@@ -44,7 +44,7 @@ const USBankScraper = {
 
       return { offers: cleaned, added, totalFound: cleaned.length };
     } catch (err) {
-      console.error('[RMX-USBank] Scrape failed:', err);
+      debug.error('[RMX-USBank] Scrape failed:', err);
       return { offers: [], added: 0, totalFound: 0 };
     }
   },
@@ -56,7 +56,7 @@ const USBankScraper = {
         expandBtn.click();
         await this.wait(1500);
       } catch (err) {
-        console.warn('[RMX-USBank] Failed to expand offers:', err);
+        debug.warn('[RMX-USBank] Failed to expand offers:', err);
       }
     }
     await this.scrollToLoad();

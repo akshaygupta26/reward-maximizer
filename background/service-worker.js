@@ -22,7 +22,7 @@ let syncProgress = {
 // Listen for content script ready messages
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.action === 'content_script_ready') {
-    console.log('[Reward Maximizer] Content script ready on:', message.site, message.url);
+    debug.log('[RMX-SW] Content script ready on:', message.site, message.url);
     handleContentScriptReady(message, sender.tab);
     return false;
   }
@@ -187,7 +187,7 @@ function generateId() {
 // Handle extension installation
 chrome.runtime.onInstalled.addListener((details) => {
   if (details.reason === 'install') {
-    console.log('[Reward Maximizer] Extension installed - showing welcome page');
+    debug.log('[RMX-SW] Extension installed - showing welcome page');
 
     // Initialize default settings
     chrome.storage.local.set({
@@ -208,7 +208,7 @@ chrome.runtime.onInstalled.addListener((details) => {
       url: chrome.runtime.getURL('onboarding/welcome.html')
     });
   } else if (details.reason === 'update') {
-    console.log('[Reward Maximizer] Extension updated to', chrome.runtime.getManifest().version);
+    debug.log('[RMX-SW] Extension updated to', chrome.runtime.getManifest().version);
 
     // Check if user needs to see onboarding
     chrome.storage.local.get(['rmx_onboarding_complete'], (result) => {
@@ -270,14 +270,14 @@ async function checkMerchantOffers(hostname, tabId) {
 // Alarm for periodic offer refresh (optional future feature)
 chrome.alarms.onAlarm.addListener((alarm) => {
   if (alarm.name === 'refresh_offers') {
-    console.log('[Reward Maximizer] Periodic refresh triggered');
+    debug.log('[RMX-SW] Periodic refresh triggered');
     // Could trigger background sync here in future
   }
 });
 
 // Sync progress management functions
 function startSyncProgress(portal) {
-  console.log('[Service Worker] Starting sync for:', portal);
+  debug.log('[RMX-SW] Starting sync for:', portal);
 
   syncProgress.isRunning = true;
   syncProgress.currentPortal = portal;
@@ -294,7 +294,7 @@ function startSyncProgress(portal) {
 }
 
 function completeSyncProgress(portal, offersCount = 0) {
-  console.log('[Service Worker] Completed sync for:', portal, 'Offers:', offersCount);
+  debug.log('[RMX-SW] Completed sync for:', portal, 'Offers:', offersCount);
 
   if (!syncProgress.completed.includes(portal)) {
     syncProgress.completed.push(portal);
@@ -313,7 +313,7 @@ function completeSyncProgress(portal, offersCount = 0) {
 }
 
 function recordSyncError(portal, error) {
-  console.error('[Service Worker] Sync error for:', portal, error);
+  debug.error('[RMX-SW] Sync error for:', portal, error);
 
   syncProgress.errors.push({ portal, error, timestamp: Date.now() });
 
@@ -343,7 +343,7 @@ function updateSyncBadge() {
 }
 
 function finishAllSyncs() {
-  console.log('[Service Worker] All syncs complete!');
+  debug.log('[RMX-SW] All syncs complete!');
 
   syncProgress.isRunning = false;
 

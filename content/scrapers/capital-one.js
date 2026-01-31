@@ -6,13 +6,10 @@ const CapitalOneScraper = {
   source: 'capital-one',
   shoppingUrl: 'https://www.capitaloneshopping.com/',
   portalBaseUrl: 'https://www.capitaloneshopping.com/s/',
-  debug: true, // Enable detailed logging
 
   // Logging helper
   log(...args) {
-    if (this.debug) {
-      console.log('[RMX-CapitalOne]', ...args);
-    }
+    debug.log('[RMX-CapitalOne]', ...args);
   },
 
   // Capital One Shopping page - scrape available rates
@@ -38,7 +35,7 @@ const CapitalOneScraper = {
       // On any other site - check if cashback available
       return await this.checkCurrentSite();
     } catch (err) {
-      console.error('[RMX-CapitalOne] Scrape failed:', err);
+      debug.error('[RMX-CapitalOne] Scrape failed:', err);
       return { offers: [], added: 0, totalFound: 0 };
     }
   },
@@ -100,7 +97,7 @@ const CapitalOneScraper = {
 
     return offers;
     } catch (err) {
-      console.error('[RMX-CapitalOne] collectMerchantRates failed:', err);
+      debug.error('[RMX-CapitalOne] collectMerchantRates failed:', err);
       return [];
     }
   },
@@ -203,5 +200,5 @@ const CapitalOneScraper = {
 
 if (typeof window !== 'undefined') {
   window.CapitalOneScraper = CapitalOneScraper;
-  console.log('[RMX-CapitalOne] Scraper loaded successfully');
+  debug.log('[RMX-CapitalOne] Scraper loaded successfully');
 }

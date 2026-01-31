@@ -1,7 +1,7 @@
 // Merchant Banner - Shows non-intrusive banner on merchant websites with active offers
 // This content script runs on ALL websites to detect if we have offers for the current merchant
 
-console.log('[RMX Merchant Banner] Script loaded on', window.location.hostname);
+debug.log('[RMX-Banner] Script loaded on', window.location.hostname);
 
 // State
 let bannerElement = null;
@@ -27,7 +27,7 @@ async function init() {
   ];
 
   if (portalSites.some(site => hostname.includes(site))) {
-    console.log('[RMX Merchant Banner] Skipping portal site');
+    debug.log('[RMX-Banner] Skipping portal site');
     return;
   }
 
@@ -42,7 +42,7 @@ async function checkForOffers() {
     const allOffers = response.offers || [];
 
     if (allOffers.length === 0) {
-      console.log('[RMX Merchant Banner] No offers in storage');
+      debug.log('[RMX-Banner] No offers in storage');
       return;
     }
 
@@ -50,7 +50,7 @@ async function checkForOffers() {
     const hostname = window.location.hostname.replace('www.', '').toLowerCase();
     const merchantName = hostname.split('.')[0];
 
-    console.log('[RMX Merchant Banner] Checking for offers matching:', merchantName);
+    debug.log('[RMX-Banner] Checking for offers matching:', merchantName);
 
     // Find matching offers
     currentOffers = allOffers.filter(offer => {
@@ -60,13 +60,13 @@ async function checkForOffers() {
                     offerMerchant.replace(/[^a-z0-9]/g, '') === merchantName.replace(/[^a-z0-9]/g, '');
 
       if (match) {
-        console.log('[RMX Merchant Banner] Match found:', offer.merchant, '|', offer.value, '|', offer.source);
+        debug.log('[RMX-Banner] Match found:', offer.merchant, '|', offer.value, '|', offer.source);
       }
       return match;
     });
 
     if (currentOffers.length > 0) {
-      console.log('[RMX Merchant Banner] Found', currentOffers.length, 'offers for this merchant');
+      debug.log('[RMX-Banner] Found', currentOffers.length, 'offers for this merchant');
       showBanner();
 
       // Notify background to update badge
@@ -75,10 +75,10 @@ async function checkForOffers() {
         count: currentOffers.length
       });
     } else {
-      console.log('[RMX Merchant Banner] No matching offers found');
+      debug.log('[RMX-Banner] No matching offers found');
     }
   } catch (error) {
-    console.error('[RMX Merchant Banner] Error checking offers:', error);
+    debug.error('[RMX-Banner] Error checking offers:', error);
   }
 }
 
@@ -124,7 +124,7 @@ function showBanner() {
     bannerElement.classList.add('rmx-visible');
   }, 300);
 
-  console.log('[RMX Merchant Banner] Banner displayed');
+  debug.log('[RMX-Banner] Banner displayed');
 }
 
 // Create banner HTML

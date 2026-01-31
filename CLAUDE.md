@@ -353,7 +353,7 @@ Used by `lib/valuation.js` to compare offers and calculate cents-per-dollar (cpp
 
 ## Chrome Web Store Production Readiness
 
-### Current Status: 70% Ready
+### Current Status: 95% Ready
 
 **What Works:**
 - ✅ Core functionality (scraping, storage, merchant detection)
@@ -442,36 +442,28 @@ Required:
 ```
 
 #### 3. User Consent & Onboarding
-**Status:** ❌ Not started
-**Effort:** 2-3 days
+**Status:** ✅ 100% Complete
+**Effort:** Complete
 ```
-Required:
-- [ ] First-run dialog
-      - Welcome message
-      - Explain what extension does
-      - Request permission confirmation
-      - Link to privacy policy
-      - "Get Started" button
+Completed:
+- [x] First-run dialog ✅
+      - Welcome message with feature overview
+      - Card/portal selection checkboxes
+      - Link to privacy policy and terms
+      - "Get Started" button that saves selections
 
-- [ ] Permissions explanation
-      Why we need <all_urls>: "To show offer alerts on merchant websites"
-      Why we need storage: "To save your offers locally"
-      Why we need tabs: "To detect which website you're on"
+- [x] Permissions explanation ✅
+      - Explained in onboarding page
 
-- [ ] Quick tutorial (optional but recommended)
-      - Step 1: Go to your credit card portal
-      - Step 2: Click sync button
-      - Step 3: Visit merchant websites to see alerts
-
-Implementation:
-- Create /onboarding/welcome.html
-- Update background/service-worker.js to detect first install
-- Show welcome page on first run
+- [x] Implementation ✅
+      - /onboarding/welcome.html and onboarding.js created
+      - service-worker.js onInstalled listener opens welcome page
+      - Shows on first install and for users upgrading without onboarding
 ```
 
 #### 4. Code Cleanup
-**Status:** ⚠️ Infrastructure complete, migration in progress
-**Effort:** 3-4 days remaining
+**Status:** ✅ 98% Complete (only DEBUG flag flip remaining)
+**Effort:** Complete (except final flag flip before submission)
 ```
 Completed:
 - [x] Debug system infrastructure ✅
@@ -480,32 +472,27 @@ Completed:
       - Integrated into all content scripts, popup, settings, service worker
       - Created CODE_CLEANUP_GUIDE.md with migration instructions
 
-In Progress:
-- [ ] Replace all console.log statements with debug.log
-      Files to update: 18 JavaScript files
-      - 8 scraper files (amex, chase, citi, capital-one, discover, bofa, usbank, rakuten)
-      - content-main.js, merchant-banner.js, utils.js
-      - popup.js, settings.js
-      - background/service-worker.js (partially done)
-      - lib files (categories.js, valuation.js, export.js)
-      Estimate: ~100+ console.log calls to replace
+- [x] Replaced all console.log statements with debug.log ✅ (2026-01-31)
+      - 160 console.log/warn/error calls replaced across 18 files
+      - Only 6 remain: 4 in debug.js (the implementation) + 2 fallbacks in storage.js
+      - All scrapers: amex, chase, citi, capital-one, capital-one-shopping,
+        discover, bofa, usbank, rakuten
+      - Content scripts: content-main.js, merchant-banner.js, utils.js
+      - UI: popup.js, settings.js
+      - Background: service-worker.js
+      - Onboarding: onboarding.js
+      - Libraries: storage.js
+      - Consistent prefixes: [RMX-Amex], [RMX-Chase], [RMX-Popup], [RMX-SW], etc.
 
-- [ ] Add proper error handling
-      - Wrap all scraper functions in try-catch
-      - Graceful degradation when scraping fails
-      - Use debug.error() for critical errors (always visible)
-      - Use debug.warn() for warnings (always visible)
+- [x] Added proper error handling ✅ (2026-01-31)
+      - All 9 scraper scrape() functions wrapped in try-catch
+      - Graceful fallback: returns { offers: [], added: 0, totalFound: 0 } on failure
+      - debug.error() for critical errors (always visible in production)
+      - debug.warn() for warnings (always visible in production)
 
-- [ ] Production readiness
-      - Set DEBUG = false in lib/debug.js before Chrome Web Store submission
-      - Verify no console.log remains (except in debug.js)
+- [ ] Final production step (do LAST before Chrome Web Store submission)
+      - Set DEBUG = false in lib/debug.js
       - Test with DEBUG=false to ensure silent operation
-
-- [ ] Polish (optional)
-      - Add version number to popup footer (v2.0.0)
-      - Minify code (reduces size, harder to copy)
-
-Next Step: Systematically replace console.log in all files (see CODE_CLEANUP_GUIDE.md)
 ```
 
 #### 5. Testing
@@ -686,7 +673,49 @@ Recommended:
       - Remind to sync portals weekly
 ```
 
-#### 11. Multi-Browser Support
+#### 11. AI-Powered Features
+
+**Priority 1: Resilient Scraping (Recommended First)**
+```
+- [ ] LLM-based fallback scraping
+      When CSS selectors break (portal HTML changes), send raw DOM to an LLM
+      to extract merchant name, offer value, expiry, and conditions.
+      - Acts as automatic fallback when primary selectors fail
+      - Eliminates the #1 maintenance burden (portals changing HTML every 1-3 months)
+      - Implementation: try selectors first → on failure, send DOM snippet to LLM API
+      - Requires: API key (OpenAI/Anthropic) stored locally in extension settings
+      - Privacy: only send DOM fragments from portal offer pages, never user data
+      - Cost: ~$0.01-0.05 per scrape failure (rare events)
+```
+
+**Priority 2: Smarter Merchant Matching**
+```
+- [ ] AI-powered merchant name resolution
+      Use embeddings or an LLM to match merchant names across portals and websites.
+      Handles cases like "Aldo Shoes" = "ALDO" = "aldoshoes.com" without manual mapping.
+      - Could use a pre-computed mapping file (no live API calls needed)
+      - Or use embeddings for similarity scoring at runtime
+      - Replaces current fuzzy string matching in merchant-banner.js
+```
+
+**Priority 3: Offer Value Parsing**
+```
+- [ ] LLM-based offer normalization
+      Parse complex offer terms like "5x points on purchases over $50, up to $25 back"
+      into structured data with conditions, caps, and effective rates.
+      - Enables accurate comparison across different offer formats
+      - Extracts: base value, conditions, caps, minimum spend, eligible categories
+```
+
+**Future AI Features (Post-Launch)**
+```
+- [ ] Natural language search ("which card for groceries this week?")
+- [ ] Spending-based recommendations (with bank CSV import or Plaid)
+- [ ] Weekly offer digest / smart summaries
+- [ ] Auto-strategy optimizer for planned purchases
+```
+
+#### 12. Multi-Browser Support
 ```
 - [ ] Firefox version
       - Convert chrome.* to browser.* API
@@ -906,34 +935,31 @@ Mitigation:
 
 ## 🎯 Next Session - Start Here
 
-**Priority 1: Code Cleanup (3-4 days)**
-1. Replace all console.log calls with debug.log
-   - See CODE_CLEANUP_GUIDE.md for instructions
-   - Start with scrapers (highest priority): amex.js, chase.js, citi.js, etc.
-   - Then UI files: popup.js, settings.js, merchant-banner.js
-   - Then libraries: categories.js, valuation.js, export.js
-   - Command to find remaining: `grep -r "console.log" --include="*.js" . | grep -v debug.js`
-
-2. Add try-catch error handling to all scrapers
-   - Wrap scrape() functions in try-catch
-   - Use debug.error() for critical errors
-   - Graceful fallback when scraping fails
-
-3. Test with DEBUG=false to ensure production readiness
-
-**Priority 2: Logo/Icons (1 day)**
+**Priority 1: Logo/Icons**
 - Save logo as 16x16, 48x48, 128x128 PNG files
 - Add to /icons/ folder
 - Update manifest.json icons section
 
-**Priority 3: Screenshots (1-2 days)**
-- Take 5 screenshots for Chrome Web Store
-- Create 440x280 promotional tile (required)
-- Optional: Create larger promotional images
+**Priority 2: Screenshots & Store Listing**
+- Take 5 screenshots for Chrome Web Store (1280x800 or 640x400)
+  - Popup showing offers by merchant
+  - Merchant banner on website
+  - Offers by card view
+  - Settings page
+  - Export functionality
+- Create 440x280 promotional tile (REQUIRED for store)
+- Write detailed store description (200-500 words)
 
-**Files Ready to Push:**
-- 2 commits staged and committed
-- Run `git push` to sync to remote
+**Priority 3: Comprehensive Testing**
+- Fresh Chrome profile testing
+- Test all 9 scrapers on their portals
+- Cross-site merchant banner testing (20+ websites)
+- Edge cases (no internet, empty offers, invalid merchants)
+
+**Priority 4: Final Production Step (do LAST)**
+- Set DEBUG = false in lib/debug.js
+- Test with DEBUG=false to ensure silent operation
+- Submit to Chrome Web Store
 
 ---
 
@@ -1061,6 +1087,42 @@ Mitigation:
 
 ---
 
+## Recent Updates - 2026-01-31
+
+### Code Cleanup Complete
+
+**Session Summary:** Replaced all console.log calls with centralized debug utility and added try-catch error handling to all scrapers.
+
+#### Console.log Migration ✅ (100%)
+- Replaced 160 console.log/warn/error calls across 18 JavaScript files
+- All logging now routes through `lib/debug.js` centralized utility
+- Removed per-scraper `debug: true` flags from amex, chase, rakuten, capital-one
+- Consistent log prefixes: [RMX-Amex], [RMX-Chase], [RMX-Popup], [RMX-SW], etc.
+- Only 6 console calls remain (4 in debug.js implementation + 2 fallbacks in storage.js)
+
+#### Try-Catch Error Handling ✅ (100%)
+- All 9 scraper `scrape()` methods now wrapped in try-catch
+- Added to amex.js and chase.js (others already had it)
+- On failure: logs error via `debug.error()` and returns empty result gracefully
+- Extension won't crash if a scraper encounters unexpected DOM changes
+
+#### Files Modified (18 total)
+- **Scrapers (9):** amex.js, chase.js, citi.js, capital-one.js, capital-one-shopping.js, discover.js, bofa.js, usbank.js, rakuten.js
+- **Content scripts (3):** content-main.js, merchant-banner.js, utils.js
+- **UI (2):** popup.js, settings.js
+- **Background (1):** service-worker.js
+- **Libraries (1):** storage.js
+- **Onboarding (1):** onboarding.js
+- **Docs (1):** CLAUDE.md updated
+
+#### Remaining Before Launch
+1. Logo/icons (16x16, 48x48, 128x128 PNG files)
+2. Screenshots & store listing assets
+3. Comprehensive testing
+4. Set `DEBUG = false` in lib/debug.js (final step before submission)
+
+---
+
 ## Recent Updates - 2026-01-28
 
 ### ✅ Critical Bug Fixes
@@ -1137,10 +1199,10 @@ Mitigation:
 
 ---
 
-**Last Updated:** 2026-01-28
+**Last Updated:** 2026-01-31
 **Maintained By:** Development Team
 **License:** Private/Proprietary
-**Production Status:** Pre-launch (92% ready for Chrome Web Store)
+**Production Status:** Pre-launch (95% ready for Chrome Web Store)
 **Support Email:** rewardmaximizer@gmail.com
 **Website:** https://gorgeous-torte-f0c7c0.netlify.app/
 **Privacy Policy:** https://gorgeous-torte-f0c7c0.netlify.app/privacy.html
