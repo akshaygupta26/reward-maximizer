@@ -2,13 +2,18 @@
 //
 // Chase Offers API Observation Layer
 //
-// Chase offer hub (secure.chase.com/.../merchantOffers/offer-hub) is a React SPA.
-// This interceptor observes the API responses that populate the offer tiles.
+// Chase offer hub (secure.chase.com/web/auth/dashboard#/dashboard/offerHub/index)
+// renders inside an iframe. The main API endpoint is:
+//   GET .../digital-customer-targeted-offers/v3/customer-offers
 //
-// API patterns (heuristic — refine after live observation with DEBUG=true):
-// - GET requests containing /offers, /commerce, /merchantOffers in URL
-// - JSON responses with arrays of offer objects
-// - POST requests for offer activation
+// Response shape:
+//   { customerOffers: [{ offers: [...], digitalAccountIdentifier, ... }],
+//     vendorCategories: [...], digitalProfileAccounts: [...] }
+//
+// Each offer has: offerIdentifier, offerStatusName (NEW|SERVED|ACTIVATED),
+//   merchantDetails.merchantName, offerDetails.offerOptions[0] (amounts),
+//   offerDisplayDetails.offerHeaderText (clean value like "7% cash back"),
+//   offerCategories[0].offerCategoryName
 
 const ChaseInterceptor = {
   portal: 'chase',
@@ -16,22 +21,17 @@ const ChaseInterceptor = {
 
   // URL substrings to match for offer-related API calls
   urlPatterns: [
-    '/offers',
-    '/commerce',
-    '/merchantoffers',
-    '/merchant-offers',
-    '/deals',
-    '/rewards/offers',
-    '/offer-hub'
+    'customer-offers',
+    'digital-customer-targeted-offers',
+    'digital-offers',
+    '/dso/'
   ],
 
   // Activation URL patterns
   activationPatterns: [
     '/activate',
     '/enroll',
-    '/add-offer',
-    '/addoffer',
-    '/opt-in'
+    '/add-offer'
   ],
 
   _injected: false,
@@ -107,58 +107,77 @@ const ChaseInterceptor = {
   },
 
   /**
-   * Extract the offer array from various response shapes.
+   * Extract the offer array from the Chase API response.
+   * Primary path: customerOffers[0].offers
    */
   _extractOfferArray(payload) {
     if (Array.isArray(payload)) return payload;
+
+    // Primary: customerOffers[0].offers
+    if (Array.isArray(payload.customerOffers) && payload.customerOffers.length > 0) {
+      const account = payload.customerOffers[0];
+      // Stash account-level metadata for use in _parseChaseOffer
+      this._currentAccountId = account.digitalAccountIdentifier || null;
+      if (Array.isArray(account.offers)) return account.offers;
+    }
+
+    // Fallback for other response shapes
     if (Array.isArray(payload.offers)) return payload.offers;
-    if (Array.isArray(payload.data)) return payload.data;
-    if (Array.isArray(payload.merchantOffers)) return payload.merchantOffers;
-    if (Array.isArray(payload.commerceOffers)) return payload.commerceOffers;
-    if (Array.isArray(payload.offerList)) return payload.offerList;
     return BaseInterceptor.findOfferArray(payload);
   },
 
   /**
-   * Parse a single Chase offer from the API.
-   * Field names are heuristic — update after observing real responses.
+   * Parse a single Chase offer from the customer-offers API.
+   * Field names match the real v3/customer-offers response schema.
    */
   _parseChaseOffer(raw) {
     if (!raw || typeof raw !== 'object') return null;
 
-    const merchant = raw.merchantName || raw.merchant || raw.name ||
-                     raw.merchantDisplayName || raw.brandName || raw.storeName || null;
+    // merchantDetails.merchantName is the primary merchant field
+    const details = raw.merchantDetails || {};
+    const merchant = details.merchantName || null;
     if (!merchant) return null;
 
-    const value = raw.rewardValue || raw.reward || raw.value ||
-                  raw.offerDescription || raw.description ||
-                  raw.cashBack || raw.discount || null;
+    const display = raw.offerDisplayDetails || {};
+    const offerOpts = raw.offerDetails || {};
+    const options = (offerOpts.offerOptions && offerOpts.offerOptions[0]) || {};
 
-    const expiry = raw.expirationDate || raw.expiry || raw.endDate ||
-                   raw.validThrough || raw.expires || 'Check portal';
+    // offerHeaderText is the cleanest value: "7% cash back", "$10 cash back"
+    const value = display.offerHeaderText || display.shortMessageText || 'See details';
 
-    const offerId = raw.offerId || raw.id || raw.offerKey || raw.offerIdentifier || null;
-    const activationUrl = raw.activationUrl || raw.enrollUrl || raw.addUrl || null;
+    // Expiry from offerEndTimestamp (ISO), or remainingDaysCount
+    let expiry = offerOpts.offerEndTimestamp || 'Check portal';
+    if (expiry !== 'Check portal') {
+      try {
+        const d = new Date(expiry);
+        expiry = `${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')}/${d.getFullYear()}`;
+      } catch (e) { /* keep raw */ }
+    }
 
-    let eligibleCards = null;
-    if (Array.isArray(raw.eligibleCards)) eligibleCards = raw.eligibleCards;
-    else if (raw.accountId) eligibleCards = [raw.accountId];
-    else if (raw.cardId) eligibleCards = [raw.cardId];
+    const offerId = raw.offerIdentifier || null;
+    const status = raw.offerStatusName || null; // NEW, SERVED, ACTIVATED
 
-    const minSpend = raw.minSpend ?? raw.minimumSpend ?? raw.spendThreshold ?? null;
-    const maxReward = raw.maxReward ?? raw.rewardCap ?? raw.maximumReward ?? null;
-    const status = raw.activationStatus || raw.status || raw.offerStatus || null;
+    // Account from parent-level stash
+    const eligibleCards = this._currentAccountId ? [String(this._currentAccountId)] : null;
+
+    const minSpend = options.minimumSpendingAmount ?? null;
+    const maxReward = options.maximumRewardOfferAmount ?? null;
+
+    // Category from offerCategories
+    const category = (raw.offerCategories && raw.offerCategories[0])
+      ? raw.offerCategories[0].offerCategoryName : null;
 
     return {
       merchant,
-      value: value || 'See details',
+      value,
       expiry,
       offerId,
-      activationUrl,
+      activationUrl: null, // Chase uses session-bound activation, not direct URLs
       eligibleCards,
       minSpend: minSpend != null ? Number(minSpend) : null,
       maxReward: maxReward != null ? Number(maxReward) : null,
-      status
+      status,
+      merchantCategory: category ? category.toLowerCase() : null
     };
   },
 
