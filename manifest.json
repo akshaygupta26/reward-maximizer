@@ -36,11 +36,15 @@
       "js": [
         "lib/debug.js",
         "lib/categories.js",
+        "lib/extractor-config.js",
+        "lib/interceptor-health.js",
         "content/utils.js",
+        "content/interceptors/base-interceptor.js",
+        "content/interceptors/amex-interceptor.js",
         "content/scrapers/amex.js",
         "content/content-main.js"
       ],
-      "run_at": "document_idle"
+      "run_at": "document_start"
     },
     {
       "matches": [
@@ -49,11 +53,15 @@
       "js": [
         "lib/debug.js",
         "lib/categories.js",
+        "lib/extractor-config.js",
+        "lib/interceptor-health.js",
         "content/utils.js",
+        "content/interceptors/base-interceptor.js",
+        "content/interceptors/chase-interceptor.js",
         "content/scrapers/chase.js",
         "content/content-main.js"
       ],
-      "run_at": "document_idle"
+      "run_at": "document_start"
     },
     {
       "matches": [
@@ -63,11 +71,15 @@
       "js": [
         "lib/debug.js",
         "lib/categories.js",
+        "lib/extractor-config.js",
+        "lib/interceptor-health.js",
         "content/utils.js",
+        "content/interceptors/base-interceptor.js",
+        "content/interceptors/citi-interceptor.js",
         "content/scrapers/citi.js",
         "content/content-main.js"
       ],
-      "run_at": "document_idle"
+      "run_at": "document_start"
     },
     {
       "matches": [
@@ -76,11 +88,15 @@
       "js": [
         "lib/debug.js",
         "lib/categories.js",
+        "lib/extractor-config.js",
+        "lib/interceptor-health.js",
         "content/utils.js",
+        "content/interceptors/base-interceptor.js",
+        "content/interceptors/capital-one-interceptor.js",
         "content/scrapers/capital-one.js",
         "content/content-main.js"
       ],
-      "run_at": "document_idle"
+      "run_at": "document_start"
     },
     {
       "matches": [
@@ -102,11 +118,15 @@
       "js": [
         "lib/debug.js",
         "lib/categories.js",
+        "lib/extractor-config.js",
+        "lib/interceptor-health.js",
         "content/utils.js",
+        "content/interceptors/base-interceptor.js",
+        "content/interceptors/discover-interceptor.js",
         "content/scrapers/discover.js",
         "content/content-main.js"
       ],
-      "run_at": "document_idle"
+      "run_at": "document_start"
     },
     {
       "matches": [
@@ -116,11 +136,15 @@
       "js": [
         "lib/debug.js",
         "lib/categories.js",
+        "lib/extractor-config.js",
+        "lib/interceptor-health.js",
         "content/utils.js",
+        "content/interceptors/base-interceptor.js",
+        "content/interceptors/bofa-interceptor.js",
         "content/scrapers/bofa.js",
         "content/content-main.js"
       ],
-      "run_at": "document_idle"
+      "run_at": "document_start"
     },
     {
       "matches": [
@@ -129,11 +153,15 @@
       "js": [
         "lib/debug.js",
         "lib/categories.js",
+        "lib/extractor-config.js",
+        "lib/interceptor-health.js",
         "content/utils.js",
+        "content/interceptors/base-interceptor.js",
+        "content/interceptors/usbank-interceptor.js",
         "content/scrapers/usbank.js",
         "content/content-main.js"
       ],
-      "run_at": "document_idle"
+      "run_at": "document_start"
     },
     {
       "matches": [
@@ -175,7 +203,7 @@
   ],
   "web_accessible_resources": [
     {
-      "resources": ["lib/*.js", "data/*.js"],
+      "resources": ["lib/*.js", "data/*.js", "content/interceptors/*.js"],
       "matches": ["<all_urls>"]
     }
   ]
