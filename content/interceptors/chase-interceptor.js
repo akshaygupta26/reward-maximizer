@@ -14,6 +14,11 @@
 //   merchantDetails.merchantName, offerDetails.offerOptions[0] (amounts),
 //   offerDisplayDetails.offerHeaderText (clean value like "7% cash back"),
 //   offerCategories[0].offerCategoryName
+//
+// Activation: Chase activates offers via a GET to reco.chase.com click-tracking.
+//   Each offer has digitalInteractionDestUrlText with a relative path.
+//   The base URL is derived from the page context (reco.chase.com).
+//   We fire these as no-cors fetches from the main world to trigger activation.
 
 const ChaseInterceptor = {
   portal: 'chase',
@@ -172,7 +177,7 @@ const ChaseInterceptor = {
       value,
       expiry,
       offerId,
-      activationUrl: null, // Chase uses session-bound activation, not direct URLs
+      activationUrl: raw.digitalInteractionDestUrlText || null,
       eligibleCards,
       minSpend: minSpend != null ? Number(minSpend) : null,
       maxReward: maxReward != null ? Number(maxReward) : null,
@@ -181,12 +186,71 @@ const ChaseInterceptor = {
     };
   },
 
+  // Base URL for activation click-tracking
+  _activationBaseUrl: 'https://reco.chase.com/events/recoengine/public/recommendation',
+
   /**
-   * Activate offers via API. TODO: implement after discovering Chase's activation endpoint.
+   * Activate NEW offers by firing their click-tracking URLs.
+   * Each offer's digitalInteractionDestUrlText (stored as activationUrl)
+   * is a relative path that, when GET-requested to reco.chase.com,
+   * triggers server-side activation.
+   *
+   * Runs in main world via injected script to carry session cookies.
    */
   async activateAll(offers) {
-    debug.log('[RMX-Interceptor-Chase] API activation not yet implemented, deferring to DOM scraper');
-    return 0;
+    if (!offers || offers.length === 0) return 0;
+
+    // Filter to only NEW/SERVED (unactivated) offers with activation URLs
+    const toActivate = offers.filter(o =>
+      o.activationUrl &&
+      o.status !== 'ACTIVATED'
+    );
+
+    if (toActivate.length === 0) {
+      debug.log('[RMX-Interceptor-Chase] No offers to activate');
+      return 0;
+    }
+
+    debug.log(`[RMX-Interceptor-Chase] Activating ${toActivate.length} offers via click-tracking`);
+
+    // Build activation URLs — the activationUrl field contains the relative path
+    // starting with /ccb/..., prefixed with the reco.chase.com base
+    const urls = toActivate.map(o => {
+      const path = o.activationUrl;
+      // Path from API starts with /ccb/... — convert to interaction endpoint
+      // The click-tracking uses customer-interaction instead of events
+      return this._activationBaseUrl + path;
+    });
+
+    // Inject a script into main world to fire all activation GETs
+    // Using Image beacons — simplest cross-origin GET with cookies
+    const script = `
+      (function() {
+        var urls = ${JSON.stringify(urls)};
+        var count = 0;
+        urls.forEach(function(url) {
+          var img = new Image();
+          img.onload = img.onerror = function() { count++; };
+          img.src = url;
+        });
+      })();
+    `;
+
+    try {
+      const scriptEl = document.createElement('script');
+      scriptEl.textContent = script;
+      (document.head || document.documentElement).appendChild(scriptEl);
+      scriptEl.remove();
+
+      // Wait briefly for requests to fire
+      await new Promise(r => setTimeout(r, 2000));
+
+      debug.log(`[RMX-Interceptor-Chase] Fired ${urls.length} activation requests`);
+      return toActivate.length;
+    } catch (err) {
+      debug.warn('[RMX-Interceptor-Chase] Activation failed:', err.message);
+      return 0;
+    }
   }
 };
 

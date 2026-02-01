@@ -155,6 +155,15 @@ describe('ChaseInterceptor', () => {
       const call = BaseInterceptor.normalizeOffer.mock.calls[0][0];
       expect(call.eligibleCards).toEqual(['9876543']);
     });
+
+    test('extracts activationUrl from digitalInteractionDestUrlText', () => {
+      const response = makeChaseResponse([makeChaseOffer({
+        digitalInteractionDestUrlText: '/ccb/sales-relationship/crm/test-path?offer-identifier=FIGG:123'
+      })]);
+      ChaseInterceptor.parseOffers(response, {});
+      const call = BaseInterceptor.normalizeOffer.mock.calls[0][0];
+      expect(call.activationUrl).toBe('/ccb/sales-relationship/crm/test-path?offer-identifier=FIGG:123');
+    });
   });
 
   describe('parseOffers — edge cases', () => {
@@ -181,6 +190,60 @@ describe('ChaseInterceptor', () => {
       ]);
       const offers = ChaseInterceptor.parseOffers(response, {});
       expect(offers.length).toBe(1);
+    });
+  });
+
+  describe('activateAll', () => {
+    let appendedScripts;
+
+    beforeEach(() => {
+      appendedScripts = [];
+      // Mock document for script injection
+      global.document = {
+        createElement: jest.fn(() => {
+          const el = { textContent: '', remove: jest.fn() };
+          appendedScripts.push(el);
+          return el;
+        }),
+        head: { appendChild: jest.fn() }
+      };
+    });
+
+    afterEach(() => {
+      delete global.document;
+    });
+
+    test('activates NEW offers with activation URLs', async () => {
+      const result = await ChaseInterceptor.activateAll([
+        { activationUrl: '/ccb/path1?id=1', status: 'NEW' },
+        { activationUrl: '/ccb/path2?id=2', status: 'SERVED' }
+      ]);
+      expect(result).toBe(2);
+      expect(appendedScripts.length).toBe(1);
+      expect(appendedScripts[0].textContent).toContain('reco.chase.com');
+      expect(appendedScripts[0].textContent).toContain('/ccb/path1');
+      expect(appendedScripts[0].textContent).toContain('/ccb/path2');
+    });
+
+    test('skips already ACTIVATED offers', async () => {
+      const result = await ChaseInterceptor.activateAll([
+        { activationUrl: '/ccb/path1', status: 'ACTIVATED' },
+        { activationUrl: '/ccb/path2', status: 'NEW' }
+      ]);
+      expect(result).toBe(1);
+    });
+
+    test('skips offers without activation URL', async () => {
+      const result = await ChaseInterceptor.activateAll([
+        { activationUrl: null, status: 'NEW' },
+        { activationUrl: '/ccb/path', status: 'NEW' }
+      ]);
+      expect(result).toBe(1);
+    });
+
+    test('returns 0 for empty input', async () => {
+      expect(await ChaseInterceptor.activateAll([])).toBe(0);
+      expect(await ChaseInterceptor.activateAll(null)).toBe(0);
     });
   });
 
