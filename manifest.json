@@ -3,6 +3,11 @@
   "name": "Reward Maximizer",
   "version": "2.0.0",
   "description": "Sync and stack credit card offers for maximum rewards. Compare point values across cards and find the best deals.",
+  "icons": {
+    "16": "icons/icon-16.png",
+    "48": "icons/icon-48.png",
+    "128": "icons/icon-128.png"
+  },
   "permissions": [
     "storage",
     "tabs",
@@ -21,7 +26,7 @@
     "open_in_tab": true
   },
   "background": {
-    "service_worker": "background/service-worker.js"
+    "service_worker": "service-worker.js"
   },
   "content_scripts": [
     {

@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Welcome to Reward Maximizer!</title>
+  <script src="../lib/debug.js"></script>
   <style>
     * {
       box-sizing: border-box;
@@ -289,6 +290,26 @@
       margin-left: 4px;
     }
 
+    .onboarding-message {
+      padding: 12px 16px;
+      border-radius: 8px;
+      font-size: 14px;
+      text-align: center;
+      margin-bottom: 16px;
+    }
+
+    .onboarding-message.error {
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      color: #991b1b;
+    }
+
+    .onboarding-message.warning {
+      background: #fffbeb;
+      border: 1px solid #fed7aa;
+      color: #92400e;
+    }
+
     /* Section headers - replaces inline styles */
     .section-header {
       text-align: center;
@@ -377,13 +398,13 @@
               <input type="checkbox" value="discover" disabled>
               <span class="card-label">Discover <span class="coming-soon">Coming Soon</span></span>
             </label>
-            <label class="card-checkbox">
-              <input type="checkbox" value="bofa">
-              <span class="card-label">Bank of America</span>
+            <label class="card-checkbox disabled">
+              <input type="checkbox" value="bofa" disabled>
+              <span class="card-label">Bank of America <span class="coming-soon">Coming Soon</span></span>
             </label>
-            <label class="card-checkbox">
-              <input type="checkbox" value="usbank">
-              <span class="card-label">US Bank</span>
+            <label class="card-checkbox disabled">
+              <input type="checkbox" value="usbank" disabled>
+              <span class="card-label">US Bank <span class="coming-soon">Coming Soon</span></span>
             </label>
           </div>
         </div>
@@ -440,6 +461,8 @@
           <a href="https://gorgeous-torte-f0c7c0.netlify.app/privacy.html" target="_blank">Read our Privacy Policy</a>
         </p>
       </div>
+
+      <div id="onboardingMessage" class="onboarding-message" hidden></div>
 
       <div class="actions">
         <button class="btn btn-primary" id="getStartedBtn">Get Started 🚀</button>

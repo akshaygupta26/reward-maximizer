@@ -1,11 +1,17 @@
 // Onboarding JavaScript
-debug.log('[RMX-Onboarding] Script loaded');
-
 document.addEventListener('DOMContentLoaded', () => {
-  debug.log('[RMX-Onboarding] DOM loaded');
+  debug.log('[RMX-Onboarding] Script loaded');
 
   const getStartedBtn = document.getElementById('getStartedBtn');
   const learnMoreBtn = document.getElementById('learnMoreBtn');
+  const messageEl = document.getElementById('onboardingMessage');
+
+  function showMessage(text, type) {
+    messageEl.textContent = text;
+    messageEl.className = 'onboarding-message ' + type;
+    messageEl.hidden = false;
+    setTimeout(() => { messageEl.hidden = true; }, 5000);
+  }
 
   if (!getStartedBtn) {
     debug.error('[RMX-Onboarding] Get Started button not found!');
@@ -27,7 +33,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // Validate at least one card is selected
       if (selectedCards.length === 0) {
-        alert('Please select at least one credit card or cashback portal to continue.');
+        showMessage('Please select at least one credit card or cashback portal to continue.', 'warning');
         return;
       }
 
@@ -57,35 +63,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // Close this tab after a brief delay
       setTimeout(() => {
-        debug.log('[RMX-Onboarding] Attempting to close tab...');
-        chrome.tabs.getCurrent((tab) => {
-          if (chrome.runtime.lastError) {
-            debug.error('[RMX-Onboarding] Error getting current tab:', chrome.runtime.lastError);
-            // Try alternative method
-            window.close();
-            return;
-          }
-
-          if (tab && tab.id) {
-            debug.log('[RMX-Onboarding] Closing tab ID:', tab.id);
-            chrome.tabs.remove(tab.id, () => {
-              if (chrome.runtime.lastError) {
-                debug.error('[RMX-Onboarding] Error closing tab:', chrome.runtime.lastError);
-                window.close();
-              } else {
-                debug.log('[RMX-Onboarding] Tab closed successfully');
-              }
-            });
-          } else {
-            debug.warn('[RMX-Onboarding] No tab ID found, trying window.close()');
-            window.close();
-          }
-        });
+        debug.log('[RMX-Onboarding] Closing tab...');
+        window.close();
       }, 1500);
 
     } catch (err) {
       debug.error('[RMX-Onboarding] Error in Get Started handler:', err);
-      alert('An error occurred. Please try again.');
+      showMessage('An error occurred. Please try again.', 'error');
       getStartedBtn.textContent = 'Get Started 🚀';
       getStartedBtn.disabled = false;
     }
