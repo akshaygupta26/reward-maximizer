@@ -1,9 +1,11 @@
 global.debug = { log: jest.fn(), warn: jest.fn(), error: jest.fn(), info: jest.fn() };
+const { BaseInterceptor: RealBase } = require('../content/interceptors/base-interceptor.js');
 global.BaseInterceptor = {
   MESSAGE_TYPE: 'RMX_INTERCEPTOR_BRIDGE',
   generateMainWorldScript: jest.fn(() => 'mock_script'),
   normalizeOffer: jest.fn(raw => ({ ...raw, normalized: true })),
   sanitize: jest.fn(v => v),
+  findOfferArray: RealBase.findOfferArray.bind(RealBase),
 };
 global.Categories = { detectCategory: jest.fn(() => 'shopping') };
 global.ExtractorConfig = { logRawResponses: false };

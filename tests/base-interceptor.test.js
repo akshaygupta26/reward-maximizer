@@ -31,6 +31,29 @@ describe('BaseInterceptor', () => {
       expect(script).toContain('/api/offers');
       expect(script).toContain('/enrollment');
     });
+
+    test('embeds nonce in generated script', () => {
+      const script = BaseInterceptor.generateMainWorldScript({
+        portal: 'chase',
+        urlPatterns: ['/offers'],
+        nonce: 'abc123'
+      });
+      expect(script).toContain('abc123');
+      expect(script).toContain('RMX_NONCE');
+    });
+  });
+
+  describe('generateNonce', () => {
+    test('returns 32-char hex string', () => {
+      const nonce = BaseInterceptor.generateNonce();
+      expect(nonce).toMatch(/^[0-9a-f]{32}$/);
+    });
+
+    test('generates unique values', () => {
+      const a = BaseInterceptor.generateNonce();
+      const b = BaseInterceptor.generateNonce();
+      expect(a).not.toBe(b);
+    });
   });
 
   describe('normalizeOffer', () => {
@@ -51,8 +74,26 @@ describe('BaseInterceptor', () => {
       expect(result.expiry).toBe('03/15/2026');
       expect(result.valueType).toBe('fixed');
       expect(result.offerId).toBe('offer_123');
+      expect(result.activationUrl).toBe('/api/activate');
       expect(result.eligibleCards).toEqual(['card1', 'card2']);
+      expect(result.minSpend).toBe(50);
+      expect(result.maxReward).toBe(100);
       expect(result.timestamp).toBeDefined();
+    });
+
+    test('preserves minSpend/maxReward of 0', () => {
+      const result = BaseInterceptor.normalizeOffer({
+        merchant: 'Store', value: '5%', minSpend: 0, maxReward: 0
+      }, 'chase');
+      expect(result.minSpend).toBe(0);
+      expect(result.maxReward).toBe(0);
+    });
+
+    test('rejects javascript: activationUrl', () => {
+      const result = BaseInterceptor.normalizeOffer({
+        merchant: 'Store', value: '5%', activationUrl: 'javascript:alert(1)'
+      }, 'chase');
+      expect(result.activationUrl).toBeNull();
     });
 
     test('defaults new fields to null when missing', () => {
@@ -94,6 +135,45 @@ describe('BaseInterceptor', () => {
       expect(result.action).toBe('offers_captured');
       expect(result.payload).toEqual([{ merchant: 'Test' }]);
     });
+
+    test('rejects messages with wrong nonce', () => {
+      const result = BaseInterceptor.parseMessageFromMainWorld({
+        data: {
+          type: 'RMX_INTERCEPTOR_BRIDGE',
+          nonce: 'wrong',
+          portal: 'chase',
+          action: 'api_response',
+          payload: []
+        }
+      }, 'correct_nonce');
+      expect(result).toBeNull();
+    });
+
+    test('accepts messages with correct nonce', () => {
+      const result = BaseInterceptor.parseMessageFromMainWorld({
+        data: {
+          type: 'RMX_INTERCEPTOR_BRIDGE',
+          nonce: 'my_nonce',
+          portal: 'chase',
+          action: 'api_response',
+          payload: []
+        }
+      }, 'my_nonce');
+      expect(result).not.toBeNull();
+      expect(result.portal).toBe('chase');
+    });
+
+    test('skips nonce check when no expected nonce provided', () => {
+      const result = BaseInterceptor.parseMessageFromMainWorld({
+        data: {
+          type: 'RMX_INTERCEPTOR_BRIDGE',
+          portal: 'chase',
+          action: 'api_response',
+          payload: []
+        }
+      });
+      expect(result).not.toBeNull();
+    });
   });
 
   describe('sanitize', () => {
@@ -111,6 +191,67 @@ describe('BaseInterceptor', () => {
     test('truncates long strings', () => {
       const long = 'a'.repeat(600);
       expect(BaseInterceptor.sanitize(long).length).toBe(500);
+    });
+  });
+
+  describe('sanitizeUrl', () => {
+    test('allows https URLs', () => {
+      expect(BaseInterceptor.sanitizeUrl('https://example.com/api')).toBe('https://example.com/api');
+    });
+
+    test('allows relative paths', () => {
+      expect(BaseInterceptor.sanitizeUrl('/api/activate')).toBe('/api/activate');
+    });
+
+    test('rejects javascript: URLs', () => {
+      expect(BaseInterceptor.sanitizeUrl('javascript:alert(1)')).toBeNull();
+    });
+
+    test('rejects data: URLs', () => {
+      expect(BaseInterceptor.sanitizeUrl('data:text/html,<h1>x</h1>')).toBeNull();
+    });
+
+    test('rejects http URLs', () => {
+      expect(BaseInterceptor.sanitizeUrl('http://example.com')).toBeNull();
+    });
+
+    test('returns null for non-string input', () => {
+      expect(BaseInterceptor.sanitizeUrl(null)).toBeNull();
+      expect(BaseInterceptor.sanitizeUrl(undefined)).toBeNull();
+      expect(BaseInterceptor.sanitizeUrl(42)).toBeNull();
+    });
+  });
+
+  describe('findOfferArray', () => {
+    test('finds nested array with name AND value fields', () => {
+      const result = BaseInterceptor.findOfferArray({
+        response: { items: [{ merchantName: 'Target', rewardValue: '5%' }] }
+      });
+      expect(result).toEqual([{ merchantName: 'Target', rewardValue: '5%' }]);
+    });
+
+    test('rejects array with only name fields (no value)', () => {
+      const result = BaseInterceptor.findOfferArray({
+        items: [{ merchantName: 'Target', id: 123 }]
+      });
+      expect(result).toBeNull();
+    });
+
+    test('rejects array with only value fields (no name)', () => {
+      const result = BaseInterceptor.findOfferArray({
+        items: [{ rewardValue: '5%', amount: 20 }]
+      });
+      expect(result).toBeNull();
+    });
+
+    test('returns null for empty/null input', () => {
+      expect(BaseInterceptor.findOfferArray(null)).toBeNull();
+      expect(BaseInterceptor.findOfferArray({})).toBeNull();
+    });
+
+    test('respects max depth', () => {
+      const deep = { a: { b: { c: { d: { e: [{ merchantName: 'X', value: '5%' }] } } } } };
+      expect(BaseInterceptor.findOfferArray(deep)).toBeNull();
     });
   });
 

@@ -35,14 +35,15 @@ const BofAInterceptor = {
   /**
    * Inject the main-world observer script via <script> element.
    */
-  inject() {
+  inject(nonce) {
     if (this._injected) return;
 
     const allPatterns = [...this.urlPatterns, ...this.activationPatterns];
     const script = BaseInterceptor.generateMainWorldScript({
       portal: this.portal,
       urlPatterns: allPatterns,
-      captureActivation: true
+      captureActivation: true,
+      nonce: nonce || ''
     });
 
     try {
@@ -57,8 +58,8 @@ const BofAInterceptor = {
     }
   },
 
-  async init() {
-    this.inject();
+  async init(nonce) {
+    this.inject(nonce);
   },
 
   /**
@@ -110,7 +111,7 @@ const BofAInterceptor = {
     if (Array.isArray(payload.data)) return payload.data;
     if (Array.isArray(payload.bankAmeriDeals)) return payload.bankAmeriDeals;
     if (Array.isArray(payload.offerList)) return payload.offerList;
-    return this._findOfferArray(payload);
+    return BaseInterceptor.findOfferArray(payload);
   },
 
   /**
@@ -139,8 +140,8 @@ const BofAInterceptor = {
     else if (raw.accountId) eligibleCards = [raw.accountId];
     else if (raw.cardId) eligibleCards = [raw.cardId];
 
-    const minSpend = raw.minSpend || raw.minimumSpend || raw.spendThreshold || null;
-    const maxReward = raw.maxReward || raw.rewardCap || raw.maximumReward || null;
+    const minSpend = raw.minSpend ?? raw.minimumSpend ?? raw.spendThreshold ?? null;
+    const maxReward = raw.maxReward ?? raw.rewardCap ?? raw.maximumReward ?? null;
     const status = raw.activationStatus || raw.status || raw.offerStatus || null;
 
     return {
@@ -150,32 +151,10 @@ const BofAInterceptor = {
       offerId,
       activationUrl,
       eligibleCards,
-      minSpend: minSpend ? Number(minSpend) : null,
-      maxReward: maxReward ? Number(maxReward) : null,
+      minSpend: minSpend != null ? Number(minSpend) : null,
+      maxReward: maxReward != null ? Number(maxReward) : null,
       status
     };
-  },
-
-  /**
-   * Heuristic: walk object looking for first array of merchant-like objects.
-   */
-  _findOfferArray(obj, depth = 0) {
-    if (depth > 3 || !obj || typeof obj !== 'object') return null;
-    for (const key of Object.keys(obj)) {
-      const val = obj[key];
-      if (Array.isArray(val) && val.length > 0 && typeof val[0] === 'object') {
-        const s = val[0];
-        if (s.merchantName || s.merchant || s.name || s.brandName || s.storeName ||
-            s.rewardValue || s.reward || s.value || s.offerDescription || s.cashBack) {
-          return val;
-        }
-      }
-      if (val && typeof val === 'object' && !Array.isArray(val)) {
-        const found = this._findOfferArray(val, depth + 1);
-        if (found) return found;
-      }
-    }
-    return null;
   },
 
   /**

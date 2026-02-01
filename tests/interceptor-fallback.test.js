@@ -1,6 +1,6 @@
 global.debug = { log: jest.fn(), warn: jest.fn(), error: jest.fn(), info: jest.fn() };
 
-const ExtractorConfig = require('../lib/extractor-config.js');
+const { ExtractorConfig } = require('../lib/extractor-config.js');
 const { BaseInterceptor } = require('../content/interceptors/base-interceptor.js');
 
 describe('Interceptor Fallback Integration', () => {
@@ -76,6 +76,7 @@ describe('Interceptor Fallback Integration', () => {
         normalizeOffer: jest.fn(r => r),
         MESSAGE_TYPE: 'RMX_INTERCEPTOR_BRIDGE',
         generateMainWorldScript: jest.fn(() => ''),
+        findOfferArray: jest.fn(() => null),
       };
       global.ExtractorConfig = { logRawResponses: false };
     });

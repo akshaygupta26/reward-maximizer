@@ -203,7 +203,7 @@
   ],
   "web_accessible_resources": [
     {
-      "resources": ["lib/*.js", "data/*.js", "content/interceptors/*.js"],
+      "resources": ["lib/*.js", "data/*.js"],
       "matches": ["<all_urls>"]
     }
   ]

@@ -23,10 +23,19 @@ Reward Maximizer/
 ├── manifest.json
 ├── service-worker.js                   # Badge updates, offer storage, merchant detection
 ├── content/
-│   ├── content-main.js                # Router for scraper scripts
+│   ├── content-main.js                # Hybrid extraction orchestrator (interceptor + scraper)
 │   ├── merchant-banner.js             # Offer alerts on merchant websites
 │   ├── utils.js
-│   └── scrapers/                      # amex, chase, citi, capital-one, discover, rakuten, bofa, usbank
+│   ├── interceptors/                  # Network API observation layer
+│   │   ├── base-interceptor.js        # Shared: fetch/XHR wrapping, postMessage bridge, sanitization
+│   │   ├── chase-interceptor.js       # Chase API response parser
+│   │   ├── amex-interceptor.js        # Amex API parser (multi-card support)
+│   │   ├── citi-interceptor.js        # Citi API parser
+│   │   ├── capital-one-interceptor.js # Capital One API parser
+│   │   ├── bofa-interceptor.js        # BofA API parser
+│   │   ├── discover-interceptor.js    # Discover API parser
+│   │   └── usbank-interceptor.js      # US Bank API parser
+│   └── scrapers/                      # DOM scrapers (fallback)
 ├── popup/                             # popup.html, popup.js, popup.css
 ├── settings/                          # settings.html, settings.js, settings.css
 ├── lib/
@@ -34,7 +43,9 @@ Reward Maximizer/
 │   ├── debug.js                       # Centralized logging (DEBUG flag)
 │   ├── categories.js                  # Merchant categorization
 │   ├── valuation.js                   # Point value calculator
-│   └── export.js                      # CSV/JSON export
+│   ├── export.js                      # CSV/JSON export
+│   ├── extractor-config.js            # Per-portal feature flags, timing config
+│   └── interceptor-health.js          # Per-portal health tracking (success/failure counts)
 ├── data/defaults.js                   # Default point values
 ├── data/referral.js                   # Rakuten referral URL, BMAC URL, disclosure text
 ├── onboarding/                        # First-run welcome page
@@ -57,11 +68,17 @@ Reward Maximizer/
   merchantCategory: "shopping|dining|travel|gas|...",
   valueType: "percent|fixed|multiplier",
   optedInAt: "ISO timestamp",
-  status: "active"
+  status: "active",
+  // New fields from interceptor layer (nullable, backward-compatible)
+  offerId: null,             // Portal-specific offer ID
+  activationUrl: null,       // Direct API activation endpoint
+  eligibleCards: null,        // Array of card tokens (Amex multi-card)
+  minSpend: null,            // Minimum spend threshold (number)
+  maxReward: null            // Maximum reward cap (number)
 }
 ```
 
-**Storage Keys:** `rmx_offers`, `rmx_settings`, `rmx_sync_history`, `rmx_user_cards`, `rmx_point_values`
+**Storage Keys:** `rmx_offers`, `rmx_settings`, `rmx_sync_history`, `rmx_user_cards`, `rmx_point_values`, `rmx_interceptor_health`
 
 **Deduplication:** Composite key `${source}-${merchant.toLowerCase()}` in `lib/storage.js:100-179`
 
@@ -86,11 +103,20 @@ offerMerchant.replace(/[^a-z0-9]/g, '') === merchantName.replace(/[^a-z0-9]/g, '
 ### Point Valuations
 Default in `data/defaults.js`: amex-mr: 1.8, chase-ur: 1.5, citi-typ: 1.4, capital-one-miles: 1.5, discover-cashback: 1.0
 
-### Scraper Pattern
+### Hybrid Extraction (Interceptor + Scraper)
+`content-main.js` orchestrates a two-tier extraction: interceptor first (observes API responses via fetch/XHR wrapping), DOM scraper fallback if interceptor times out or returns no data. Controlled by `lib/extractor-config.js` per-portal flags. Health tracked in `lib/interceptor-health.js`.
+
+**Flow:** Page loads → interceptor injects main-world script at `document_start` → script wraps `fetch`/`XMLHttpRequest` → API responses matching URL patterns are cloned and bridged via `window.postMessage` → content script parses offers → if no data within timeout, falls back to DOM scraper.
+
+**Key config:** `ExtractorConfig.portals[name].interceptor` (enable/disable), `ExtractorConfig.interceptorTimeoutMs` (default 8000ms), `ExtractorConfig.portals[name].fallbackToScraper` (default true).
+
+### Scraper Pattern (Fallback)
 Each scraper implements: `source`, `offersUrl`, `needsNavigation()`, `scrape()`, `collectOffers()`, `extractMerchant()`, `extractValue()`. All `scrape()` methods wrapped in try-catch returning `{ offers: [], added: 0, totalFound: 0 }` on failure.
 
 ### Debug System
 `lib/debug.js` — single `DEBUG` flag. `debug.log/info` silent when false; `debug.warn/error` always visible. Set `DEBUG = false` before CWS submission.
+
+**Log prefixes:** `[RMX-Orchestrator]` (content-main.js), `[RMX-Interceptor-{Portal}]` (interceptors), `[RMX-Scraper]` (scrapers), `[RMX-Storage]` (storage).
 
 ---
 
@@ -125,8 +151,10 @@ Each scraper implements: `source`, `offersUrl`, `needsNavigation()`, `scrape()`,
 
 ## Testing
 
-**Unit tests:** 77 tests across 4 suites (Jest) — `npm test`
+**Unit tests:** 143 tests across 10 suites (Jest) — `npm test`
 - `tests/valuation.test.js` (28), `tests/categories.test.js` (16), `tests/storage.test.js` (15), `tests/merchant-matching.test.js` (18)
+- `tests/extractor-config.test.js` (11), `tests/base-interceptor.test.js` (15), `tests/interceptor-health.test.js` (8)
+- `tests/chase-interceptor.test.js` (10), `tests/amex-interceptor.test.js` (8), `tests/interceptor-fallback.test.js` (14)
 
 **Manual testing:** See `TESTING_CHECKLIST.md`
 
@@ -154,12 +182,16 @@ Each scraper implements: `source`, `offersUrl`, `needsNavigation()`, `scrape()`,
 
 ---
 
-**Last Updated:** 2026-01-31
+**Last Updated:** 2026-02-01
 
-### Recent Updates (v2.1.0)
-- Added Rakuten referral link (merchant banner, popup stacking tip, popup empty state, onboarding)
-- Added Buy Me a Coffee tip jar (settings About section, popup footer, onboarding footer, support page)
-- Added affiliate disclosure to privacy policy, terms of service, and settings legal section
-- All referral/BMAC URLs centralized in `data/referral.js` for easy updates
-- Fixed Rakuten scraper: Rakuten redesigned their stores page, old selectors (`chakra-modal__body`, `a.chakra-button`, `[class*="store-card"]`) no longer exist. New primary selector is `a[role="group"].chakra-link` with merchant name from `img[alt]` and cashback rate from text content. Updated `offersUrl` to `/stores/all`.
-- Bumped version to 2.1.0
+### TODO (Next Session)
+- **Live API endpoint discovery** — Interceptors use heuristic URL patterns and field names. Log into each portal with `ExtractorConfig.logRawResponses = true` to discover actual API shapes, then refine `urlPatterns` and `_parse*Offer()` field mappings per portal.
+- **Amex multi-card activation** — `AmexInterceptor.activateAll()` is a skeleton. Implement once activation endpoint is discovered.
+- **Fix Chase scraper** — Two issues:
+  1. **Offers don't auto-populate after opt-in completes.** Post-opt-in sync should seamlessly save and display offers without requiring a second manual sync.
+  2. **Offer value parsing is dirty.** Values contain extra text like `"5% cash back 27 days left Success Added"`. The `extractValue()` method needs to strip trailing status text.
+
+### Recent Updates
+- **Network interceptor layer** — Added hybrid extraction architecture: API response observation (fetch/XHR wrapping) as primary method, DOM scrapers as fallback. 7 portal interceptors, shared base utilities, per-portal feature flags, health tracking. 66 new tests (143 total). Bank portal content scripts now run at `document_start`. See `docs/plans/2026-02-01-network-interceptor-layer.md` for full design.
+- Added Rakuten referral link, Buy Me a Coffee tip jar, affiliate disclosures (v2.1.0)
+- Fixed Rakuten scraper for redesigned stores page (v2.1.0)

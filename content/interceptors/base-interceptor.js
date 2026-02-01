@@ -8,11 +8,26 @@ const BaseInterceptor = {
   MESSAGE_TYPE: 'RMX_INTERCEPTOR_BRIDGE',
 
   /**
+   * Generate a cryptographic nonce for postMessage authentication.
+   * Each injection gets a unique nonce; content script must verify it.
+   */
+  generateNonce() {
+    const array = new Uint8Array(16);
+    if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
+      crypto.getRandomValues(array);
+    } else {
+      for (let i = 0; i < 16; i++) array[i] = Math.floor(Math.random() * 256);
+    }
+    return Array.from(array, b => b.toString(16).padStart(2, '0')).join('');
+  },
+
+  /**
    * Generate JavaScript to inject into the page's main world.
    * Wraps fetch() and XMLHttpRequest to observe API responses
    * matching URL patterns. Captured responses are bridged back via postMessage.
+   * Includes a nonce for message authentication.
    */
-  generateMainWorldScript({ portal, urlPatterns, captureActivation = false }) {
+  generateMainWorldScript({ portal, urlPatterns, captureActivation = false, nonce }) {
     const patternsJSON = JSON.stringify(urlPatterns);
     const messageType = this.MESSAGE_TYPE;
 
@@ -22,6 +37,7 @@ const BaseInterceptor = {
   var RMX_PORTAL = ${JSON.stringify(portal)};
   var RMX_URL_PATTERNS = ${patternsJSON};
   var RMX_MSG_TYPE = ${JSON.stringify(messageType)};
+  var RMX_NONCE = ${JSON.stringify(nonce || '')};
   var RMX_CAPTURE_ACTIVATION = ${captureActivation};
 
   function urlMatchesPatterns(url) {
@@ -38,6 +54,7 @@ const BaseInterceptor = {
     try {
       window.postMessage({
         type: RMX_MSG_TYPE,
+        nonce: RMX_NONCE,
         portal: RMX_PORTAL,
         action: action,
         payload: payload,
@@ -124,9 +141,10 @@ const BaseInterceptor = {
    * Parse a postMessage event from the main world.
    * Returns null if not from our interceptor.
    */
-  parseMessageFromMainWorld(event) {
+  parseMessageFromMainWorld(event, expectedNonce) {
     if (!event || !event.data || typeof event.data !== 'object') return null;
     if (event.data.type !== this.MESSAGE_TYPE) return null;
+    if (expectedNonce && event.data.nonce !== expectedNonce) return null;
     return {
       portal: event.data.portal,
       action: event.data.action,
@@ -163,10 +181,10 @@ const BaseInterceptor = {
       valueType,
       timestamp: Date.now(),
       offerId: raw.offerId || null,
-      activationUrl: raw.activationUrl || null,
+      activationUrl: this.sanitizeUrl(raw.activationUrl),
       eligibleCards: raw.eligibleCards || null,
-      minSpend: raw.minSpend || null,
-      maxReward: raw.maxReward || null,
+      minSpend: (raw.minSpend != null) ? raw.minSpend : null,
+      maxReward: (raw.maxReward != null) ? raw.maxReward : null,
       status: raw.status || null
     };
   },
@@ -179,6 +197,17 @@ const BaseInterceptor = {
     let cleaned = val.replace(/<[^>]*>/g, '');
     if (cleaned.length > 500) cleaned = cleaned.substring(0, 500);
     return cleaned;
+  },
+
+  /**
+   * Validate and sanitize a URL. Only allows https:// and relative paths.
+   * Returns null for dangerous schemes (javascript:, data:, etc).
+   */
+  sanitizeUrl(url) {
+    if (!url || typeof url !== 'string') return null;
+    const trimmed = url.trim();
+    if (trimmed.startsWith('https://') || trimmed.startsWith('/')) return trimmed;
+    return null;
   },
 
   /**
@@ -198,9 +227,33 @@ const BaseInterceptor = {
   },
 
   /**
+   * Heuristic: walk object looking for first array of merchant-like objects.
+   * Requires at least one name-like AND one value-like field to match.
+   */
+  findOfferArray(obj, depth = 0) {
+    if (depth > 3 || !obj || typeof obj !== 'object') return null;
+    const nameFields = ['merchantName', 'merchant', 'name', 'brandName', 'storeName', 'merchantDisplayName'];
+    const valueFields = ['rewardValue', 'reward', 'value', 'offerDescription', 'cashBack', 'discount', 'description'];
+    for (const key of Object.keys(obj)) {
+      const val = obj[key];
+      if (Array.isArray(val) && val.length > 0 && typeof val[0] === 'object') {
+        const s = val[0];
+        const hasName = nameFields.some(f => s[f]);
+        const hasValue = valueFields.some(f => s[f]);
+        if (hasName && hasValue) return val;
+      }
+      if (val && typeof val === 'object' && !Array.isArray(val)) {
+        const found = this.findOfferArray(val, depth + 1);
+        if (found) return found;
+      }
+    }
+    return null;
+  },
+
+  /**
    * Generate JS to make an authenticated activation request from the main world.
    */
-  generateActivationScript({ url, method, headers, body, portal }) {
+  generateActivationScript({ url, method, headers, body, portal, nonce }) {
     const messageType = this.MESSAGE_TYPE;
     return `
 (function() {
@@ -213,6 +266,7 @@ const BaseInterceptor = {
     return r.json().then(function(data) {
       window.postMessage({
         type: ${JSON.stringify(messageType)},
+        nonce: ${JSON.stringify(nonce || '')},
         portal: ${JSON.stringify(portal)},
         action: 'activation_result',
         payload: { success: r.ok, status: r.status, data: data }
@@ -221,6 +275,7 @@ const BaseInterceptor = {
   }).catch(function(err) {
     window.postMessage({
       type: ${JSON.stringify(messageType)},
+      nonce: ${JSON.stringify(nonce || '')},
       portal: ${JSON.stringify(portal)},
       action: 'activation_result',
       payload: { success: false, error: err.message }

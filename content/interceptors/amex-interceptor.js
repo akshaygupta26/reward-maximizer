@@ -31,14 +31,15 @@ const AmexInterceptor = {
 
   _injected: false,
 
-  inject() {
+  inject(nonce) {
     if (this._injected) return;
 
     const allPatterns = [...this.urlPatterns, ...this.activationPatterns];
     const script = BaseInterceptor.generateMainWorldScript({
       portal: this.portal,
       urlPatterns: allPatterns,
-      captureActivation: true
+      captureActivation: true,
+      nonce: nonce || ''
     });
 
     try {
@@ -53,8 +54,8 @@ const AmexInterceptor = {
     }
   },
 
-  async init() {
-    this.inject();
+  async init(nonce) {
+    this.inject(nonce);
   },
 
   parseOffers(payload, meta) {
@@ -90,7 +91,7 @@ const AmexInterceptor = {
     if (Array.isArray(payload.data)) return payload.data;
     if (Array.isArray(payload.eligibleOffers)) return payload.eligibleOffers;
     if (Array.isArray(payload.merchantOffers)) return payload.merchantOffers;
-    return this._findOfferArray(payload);
+    return BaseInterceptor.findOfferArray(payload);
   },
 
   /**
@@ -118,8 +119,8 @@ const AmexInterceptor = {
     else if (Array.isArray(raw.eligibleCardMemberTokens)) eligibleCards = raw.eligibleCardMemberTokens;
     else if (Array.isArray(raw.eligibleCards)) eligibleCards = raw.eligibleCards;
 
-    const minSpend = raw.minimumSpend || raw.spendThreshold || raw.minSpend || null;
-    const maxReward = raw.maximumReward || raw.rewardCap || raw.maxReward || null;
+    const minSpend = raw.minimumSpend ?? raw.spendThreshold ?? raw.minSpend ?? null;
+    const maxReward = raw.maximumReward ?? raw.rewardCap ?? raw.maxReward ?? null;
     const status = raw.status || (raw.enrolled ? 'activated' : 'available') || null;
 
     return {
@@ -129,29 +130,10 @@ const AmexInterceptor = {
       offerId,
       activationUrl,
       eligibleCards,
-      minSpend: minSpend ? Number(minSpend) : null,
-      maxReward: maxReward ? Number(maxReward) : null,
+      minSpend: minSpend != null ? Number(minSpend) : null,
+      maxReward: maxReward != null ? Number(maxReward) : null,
       status
     };
-  },
-
-  _findOfferArray(obj, depth = 0) {
-    if (depth > 3 || !obj || typeof obj !== 'object') return null;
-    for (const key of Object.keys(obj)) {
-      const val = obj[key];
-      if (Array.isArray(val) && val.length > 0 && typeof val[0] === 'object') {
-        const s = val[0];
-        if (s.name || s.merchantName || s.merchant || s.brandName ||
-            s.description || s.offerDescription || s.value || s.rewardValue) {
-          return val;
-        }
-      }
-      if (val && typeof val === 'object' && !Array.isArray(val)) {
-        const found = this._findOfferArray(val, depth + 1);
-        if (found) return found;
-      }
-    }
-    return null;
   },
 
   /**

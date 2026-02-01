@@ -82,11 +82,15 @@ function getInterceptor(site) {
 // Populated as API responses arrive via postMessage bridge.
 const interceptorCache = {};
 
+// Nonce for postMessage authentication — generated once per page load.
+const _rmxNonce = (typeof BaseInterceptor !== 'undefined' && BaseInterceptor.generateNonce)
+  ? BaseInterceptor.generateNonce() : '';
+
 // Listen for messages from main world (interceptor bridge)
 if (typeof BaseInterceptor !== 'undefined') {
   window.addEventListener('message', (event) => {
     if (event.source !== window) return;
-    const msg = BaseInterceptor.parseMessageFromMainWorld(event);
+    const msg = BaseInterceptor.parseMessageFromMainWorld(event, _rmxNonce);
     if (!msg) return;
 
     debug.log(`[RMX-Orchestrator] Received ${msg.action} from ${msg.portal}`, msg.meta);
@@ -156,11 +160,13 @@ async function hybridExtract(site) {
 
   // Try interceptor if available
   if (interceptor) {
+    // Clear stale cache for this portal (SPA navigation can leave old data)
+    delete interceptorCache[site];
     debug.log(`[RMX-Orchestrator] Trying interceptor for ${site} (timeout: ${timeout}ms)`);
 
     try {
       if (typeof interceptor.init === 'function') {
-        await interceptor.init();
+        await interceptor.init(_rmxNonce);
       }
 
       const cached = await waitForInterceptorData(site, timeout);
@@ -205,8 +211,11 @@ async function hybridExtract(site) {
     }
   }
 
-  // Fallback to DOM scraper
+  // Fallback to DOM scraper — wait for DOM to be ready since we run at document_start
   if (scraper) {
+    if (document.readyState === 'loading') {
+      await new Promise(r => document.addEventListener('DOMContentLoaded', r));
+    }
     debug.log(`[RMX-Orchestrator] Using DOM scraper for ${site}`);
     const result = await scraper.scrape();
     return { ...result, method: 'scraper' };
@@ -441,7 +450,7 @@ async function checkPendingSyncFromPopup() {
   if (interceptor && typeof interceptor.inject === 'function') {
     debug.log(`[RMX-Orchestrator] Injecting interceptor for ${site}`);
     try {
-      interceptor.inject();
+      interceptor.inject(_rmxNonce);
     } catch (err) {
       debug.warn(`[RMX-Orchestrator] Failed to inject interceptor for ${site}:`, err);
     }

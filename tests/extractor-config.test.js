@@ -1,4 +1,4 @@
-const ExtractorConfig = require('../lib/extractor-config');
+const { ExtractorConfig } = require('../lib/extractor-config');
 
 describe('ExtractorConfig', () => {
   beforeEach(() => {
