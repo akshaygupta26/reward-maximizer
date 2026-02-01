@@ -141,6 +141,9 @@ function createBannerHTML(cardOffer, stackingOffer) {
   if (stackingOffer) {
     const stackingName = getSourceDisplayName(stackingOffer.source);
     stackingMessage = `<div class="rmx-stacking">💡 Stack with ${stackingName} for ${stackingOffer.value} extra cashback</div>`;
+    if (stackingOffer.source === 'rakuten') {
+      stackingMessage += `<div class="rmx-referral">Don't have Rakuten? <a href="${RAKUTEN_REFERRAL_URL}" target="_blank" rel="noopener">Sign up free →</a><br><span class="rmx-referral-disc">${REFERRAL_DISCLOSURE}</span></div>`;
+    }
   }
 
   return `
@@ -287,6 +290,24 @@ function injectStyles() {
       margin-top: 4px;
       padding-left: 12px;
       border-left: 2px solid rgba(255, 255, 255, 0.3);
+    }
+
+    .rmx-referral {
+      font-size: 12px;
+      opacity: 0.85;
+      margin-top: 6px;
+      padding-left: 12px;
+      border-left: 2px solid rgba(255, 255, 255, 0.3);
+    }
+
+    .rmx-referral a {
+      color: #fbbf24;
+      text-decoration: underline;
+    }
+
+    .rmx-referral-disc {
+      font-size: 10px;
+      opacity: 0.7;
     }
 
     .rmx-banner-actions {

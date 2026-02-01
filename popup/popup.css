@@ -399,6 +399,40 @@ body {
   align-items: center;
   gap: 6px;
   font-weight: 500;
+  flex-wrap: wrap;
+}
+
+.stacking-referral {
+  color: #059669;
+  text-decoration: underline;
+  font-size: 10px;
+}
+
+.referral-disc {
+  font-size: 9px;
+  color: #94a3b8;
+  font-weight: 400;
+}
+
+.empty-state-tip {
+  font-size: 11px;
+  color: #64748b;
+  margin-top: 8px;
+  line-height: 1.5;
+}
+
+.empty-state-tip a {
+  color: #2563eb;
+  text-decoration: underline;
+}
+
+#supportBtn {
+  text-decoration: none;
+  color: #e11d48;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
 /* Footer */

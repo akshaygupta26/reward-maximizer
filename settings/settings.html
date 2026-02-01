@@ -197,16 +197,25 @@
         Discover, Bank of America, US Bank, Rakuten, or any other financial institution.
         Use at your own risk.
       </p>
+      <p class="disclaimer" style="margin-top: 12px;">
+        Reward Maximizer includes referral links to Rakuten. If you sign up through our link, we may receive a small referral bonus at no cost to you. This does not affect which offers are shown or recommended — all offers are displayed based on value alone.
+      </p>
     </section>
 
     <!-- About Section -->
     <section class="card">
       <h2>About</h2>
-      <p><strong>Reward Maximizer v2.0.0</strong></p>
+      <p><strong>Reward Maximizer v2.1.0</strong></p>
       <p class="section-desc">
         Sync and stack credit card offers for maximum rewards. Compare point values
         across cards and find the best deals.
       </p>
+
+      <div class="support-card" style="margin-top: 20px; padding: 20px; background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border-radius: 12px; text-align: center;">
+        <p style="font-size: 16px; font-weight: 600; color: #92400e; margin-bottom: 8px;">Support Development</p>
+        <p style="font-size: 14px; color: #78350f; margin-bottom: 12px;">Reward Maximizer is free and always will be. If it's saving you money, consider buying me a coffee!</p>
+        <a href="" id="settingsBmacLink" target="_blank" rel="noopener" style="display: inline-block; padding: 10px 24px; background: #FFDD00; color: #000; font-weight: 600; border-radius: 8px; text-decoration: none; font-size: 14px;">☕ Buy Me a Coffee</a>
+      </div>
     </section>
   </div>
 
@@ -214,6 +223,10 @@
   <script src="../lib/storage.js"></script>
   <script src="../lib/export.js"></script>
   <script src="../data/defaults.js"></script>
+  <script src="../data/referral.js"></script>
   <script src="settings.js"></script>
+  <script>
+    document.getElementById('settingsBmacLink').href = BMAC_URL;
+  </script>
 </body>
 </html>

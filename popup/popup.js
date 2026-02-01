@@ -42,6 +42,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   await checkSyncProgress();
   debug.log('[RMX-Popup] Detecting current merchant...');
   await detectCurrentMerchant();
+  // Set referral/support URLs
+  const emptyRakutenLink = document.getElementById('emptyRakutenLink');
+  if (emptyRakutenLink) emptyRakutenLink.href = RAKUTEN_REFERRAL_URL;
+  const supportBtn = document.getElementById('supportBtn');
+  if (supportBtn) supportBtn.href = BMAC_URL;
+
   debug.log('[RMX-Popup] Rendering UI...');
   render();
   debug.log('[RMX-Popup] ✅ Initialization complete! Offers:', offers.length, 'Filtered:', filteredOffers.length);
@@ -348,7 +354,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         'discover': 'https://card.discover.com/cardmembersvcs/deals/app/home',
         'bofa': 'https://www.bankofamerica.com/credit-cards/deals-and-offers/',
         'usbank': 'https://www.usbank.com/deals.html',
-        'rakuten': 'https://www.rakuten.com/stores'
+        'rakuten': 'https://www.rakuten.com/stores/all'
       };
 
       // Check if on the right site
@@ -652,6 +658,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 <path d="M12 16v-4M12 8h.01"></path>
               </svg>
               Stack card offer with cashback portal for extra savings!
+              ${group.offers.some(o => o.source === 'rakuten') ? `<br><a href="${RAKUTEN_REFERRAL_URL}" target="_blank" rel="noopener" class="stacking-referral">New to Rakuten? Sign up & earn bonus cashback →</a><br><span class="referral-disc">${REFERRAL_DISCLOSURE}</span>` : ''}
             </div>
           ` : ''}
           <div class="merchant-footer">

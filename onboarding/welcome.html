@@ -330,6 +330,23 @@
       margin-bottom: 20px;
     }
 
+    .rakuten-referral-hint {
+      font-size: 13px;
+      color: #64748b;
+      margin-top: 8px;
+      grid-column: 1 / -1;
+    }
+
+    .rakuten-referral-hint a {
+      color: #2563eb;
+      text-decoration: underline;
+    }
+
+    .referral-disc {
+      font-size: 11px;
+      color: #94a3b8;
+    }
+
     .section-subheader-features {
       text-align: center;
       color: #1e293b;
@@ -416,6 +433,7 @@
               <input type="checkbox" value="rakuten">
               <span class="card-label">Rakuten</span>
             </label>
+            <p class="rakuten-referral-hint">Don't have Rakuten? <a href="" id="onboardRakutenLink" target="_blank" rel="noopener">Sign up free and earn bonus cashback</a><br><span class="referral-disc">Referral link — we may earn a small bonus</span></p>
             <label class="card-checkbox disabled">
               <input type="checkbox" value="capital-one-shopping" disabled>
               <span class="card-label">Capital One Shopping <span class="coming-soon">Coming Soon</span></span>
@@ -475,11 +493,17 @@
         Need help? Email us at <a href="mailto:rewardmaximizer@gmail.com">rewardmaximizer@gmail.com</a>
         <br>
         <a href="https://gorgeous-torte-f0c7c0.netlify.app/privacy.html" target="_blank">Privacy Policy</a> •
-        <a href="https://gorgeous-torte-f0c7c0.netlify.app/terms.html" target="_blank">Terms of Service</a>
+        <a href="https://gorgeous-torte-f0c7c0.netlify.app/terms.html" target="_blank">Terms of Service</a> •
+        <a href="" id="onboardBmacLink" target="_blank" rel="noopener">Support this project</a>
       </p>
     </div>
   </div>
 
+  <script src="../data/referral.js"></script>
+  <script>
+    document.getElementById('onboardRakutenLink').href = RAKUTEN_REFERRAL_URL;
+    document.getElementById('onboardBmacLink').href = BMAC_URL;
+  </script>
   <script src="onboarding.js"></script>
 </body>
 </html>

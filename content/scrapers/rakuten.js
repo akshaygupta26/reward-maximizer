@@ -3,7 +3,7 @@
 
 const RakutenScraper = {
   source: 'rakuten',
-  offersUrl: 'https://www.rakuten.com/stores',
+  offersUrl: 'https://www.rakuten.com/stores/all',
   // Logging helper
   log(...args) {
     debug.log('[RMX-Rakuten]', ...args);
@@ -29,7 +29,6 @@ const RakutenScraper = {
       }
 
       this.log('On external site - checking for Rakuten button');
-      // On other sites, check for Rakuten button/extension
       return await this.checkCurrentSite();
     } catch (err) {
       debug.error('[RMX-Rakuten] Scrape failed:', err);
@@ -41,52 +40,10 @@ const RakutenScraper = {
     this.log('Scrolling to load lazy content...');
     await this.scrollToLoad();
 
-    // First check if we're already in a modal view
-    const inModal = document.querySelector('.chakra-modal__body');
-    if (inModal) {
-      this.log('Already in modal view, scraping directly...');
-      const offers = this.collectMerchantRatesFromModal();
-      return this.formatOffers(offers);
-    }
+    const offers = this.collectMerchantRates();
+    this.log('Collected', offers.length, 'offers from page');
 
-    // Try to click "See All" buttons to open modals
-    this.log('Looking for "See All" buttons...');
-    const seeAllButtons = Array.from(document.querySelectorAll('a.chakra-button'))
-      .filter(btn => btn.textContent.includes('See All'));
-
-    this.log('Found', seeAllButtons.length, '"See All" buttons');
-
-    let allOffers = [];
-
-    // If we found See All buttons, iterate through ALL of them
-    if (seeAllButtons.length > 0) {
-      for (let i = 0; i < seeAllButtons.length; i++) {
-        this.log(`Clicking "See All" button ${i + 1} of ${seeAllButtons.length}...`);
-
-        // Click the button to open modal
-        seeAllButtons[i].click();
-        await this.wait(2000); // Wait for modal to open
-
-        // Scrape from the modal
-        const offers = this.collectMerchantRatesFromModal();
-        this.log(`Collected ${offers.length} offers from modal ${i + 1}`);
-        allOffers = allOffers.concat(offers);
-
-        // Close the modal to return to original state
-        await this.closeModal();
-        await this.wait(1000); // Wait for modal to close
-      }
-
-      this.log('=== Scraping complete, returned to original page ===');
-    } else {
-      // Fallback: try collecting from main page
-      this.log('No "See All" buttons found, trying main page...');
-      const offers = this.collectMerchantRates();
-      this.log('Collected', offers.length, 'offers from main page');
-      allOffers = allOffers.concat(offers);
-    }
-
-    return this.formatOffers(allOffers);
+    return this.formatOffers(offers);
   },
 
   formatOffers(offers) {
@@ -114,37 +71,28 @@ const RakutenScraper = {
   },
 
   async scrollToLoad() {
-    for (let i = 0; i < 10; i++) {
+    for (let i = 0; i < 5; i++) {
       window.scrollTo(0, document.body.scrollHeight);
       await this.wait(1000);
     }
     window.scrollTo(0, 0);
+    await this.wait(500);
   },
 
   collectMerchantRates() {
     const offers = [];
     const seen = new Set();
 
-    const cardSelectors = [
-      '[class*="store-card"]',
-      '[class*="StoreCard"]',
-      '[class*="merchant-tile"]',
-      '[class*="MerchantTile"]',
-      '[data-testid*="store"]',
-      '[data-testid*="merchant"]',
-      'a[href*="/stores/"]'
-    ].join(', ');
+    // Primary selector: store cards are <a role="group" class="chakra-link">
+    const storeCards = document.querySelectorAll('a[role="group"].chakra-link');
+    this.log('Found store cards (a[role="group"]):', storeCards.length);
 
-    this.log('Using card selectors:', cardSelectors);
-    const cards = document.querySelectorAll(cardSelectors);
-    this.log('Found merchant cards:', cards.length);
-
-    cards.forEach((card, index) => {
+    storeCards.forEach((card, index) => {
       const merchant = this.extractMerchant(card);
       const value = this.extractCashbackRate(card);
-      const portalUrl = this.extractPortalUrl(card);
+      const portalUrl = card.href || null;
 
-      if (index < 3) { // Log first 3 for debugging
+      if (index < 3) {
         this.log(`Card ${index}:`, { merchant, value, portalUrl });
       }
 
@@ -154,119 +102,51 @@ const RakutenScraper = {
       offers.push({ merchant, value, portalUrl });
     });
 
-    // Also look for featured deals
-    const featuredSelectors = [
-      '[class*="featured"]',
-      '[class*="deal"]',
-      '[class*="promo"]'
-    ].join(', ');
+    // Fallback: if primary selector found nothing, try broader selectors
+    if (offers.length === 0) {
+      this.log('Primary selector found nothing, trying fallbacks...');
+      const fallbackCards = document.querySelectorAll(
+        'a.chakra-link[href*="rakuten.com/"], [role="group"][class*="chakra"]'
+      );
+      this.log('Fallback cards found:', fallbackCards.length);
 
-    this.log('Looking for featured deals with selectors:', featuredSelectors);
-    const featuredCards = document.querySelectorAll(featuredSelectors);
-    this.log('Found featured cards:', featuredCards.length);
+      fallbackCards.forEach((card, index) => {
+        const merchant = this.extractMerchant(card);
+        const value = this.extractCashbackRate(card);
+        const portalUrl = card.tagName === 'A' ? card.href : null;
 
-    featuredCards.forEach(card => {
-      const merchant = this.extractMerchant(card);
-      const value = this.extractCashbackRate(card);
-      const portalUrl = this.extractPortalUrl(card);
+        if (!merchant || seen.has(merchant.toLowerCase())) return;
+        seen.add(merchant.toLowerCase());
 
-      if (!merchant || seen.has(merchant.toLowerCase())) return;
-      seen.add(merchant.toLowerCase());
-
-      offers.push({ merchant, value, portalUrl });
-    });
+        offers.push({ merchant, value, portalUrl });
+      });
+    }
 
     this.log('Total unique merchants collected:', offers.length);
     return offers;
   },
 
-  collectMerchantRatesFromModal() {
-    try {
-    this.log('=== Scraping from modal ===');
-    const offers = [];
-    const seen = new Set();
-
-    // Find the modal body
-    const modalBody = document.querySelector('.chakra-modal__body');
-    if (!modalBody) {
-      this.log('ERROR: Modal body not found');
-      return offers;
-    }
-
-    this.log('Modal body found, looking for merchant links...');
-
-    // Find all merchant links in the modal
-    const merchantLinks = modalBody.querySelectorAll('a.chakra-link');
-    this.log('Found merchant links in modal:', merchantLinks.length);
-
-    merchantLinks.forEach((link, index) => {
-      // Extract merchant name from img alt attribute
-      const img = link.querySelector('img[alt]');
-      let merchant = null;
-
-      if (img && img.alt) {
-        // Remove the " - Rakuten coupons and Cash Back" suffix
-        merchant = img.alt.replace(/ - Rakuten coupons and Cash Back/i, '').trim();
-      }
-
-      // Extract cashback percentage from the span (multiple selectors for resilience)
-      const cashbackSpan = link.querySelector('span.css-1o3lf2p')
-        || link.querySelector('[class*="cashback"], [class*="rate"], [class*="percent"]');
-      let value = 'See details';
-
-      if (cashbackSpan) {
-        value = cashbackSpan.textContent.trim();
-      } else {
-        // Fallback: search link text for cashback pattern
-        const linkText = link.textContent || '';
-        const rateMatch = linkText.match(/(\d+(?:\.\d+)?%)\s*Cash\s*Back/i)
-          || linkText.match(/(\d+(?:\.\d+)?%)/);
-        if (rateMatch) value = rateMatch[1] + ' Cash Back';
-      }
-
-      // Extract portal URL
-      const portalUrl = link.href;
-
-      if (index < 3) { // Log first 3 for debugging
-        this.log(`Modal merchant ${index}:`, { merchant, value, portalUrl });
-      }
-
-      if (!merchant || seen.has(merchant.toLowerCase())) return;
-      seen.add(merchant.toLowerCase());
-
-      offers.push({ merchant, value, portalUrl });
-    });
-
-    this.log('Total unique merchants from modal:', offers.length);
-    return offers;
-    } catch (err) {
-      debug.error('[RMX-Rakuten] collectMerchantRatesFromModal failed:', err);
-      return [];
-    }
-  },
-
   extractMerchant(card) {
-    const selectors = [
-      '[class*="store-name"]',
-      '[class*="merchant-name"]',
-      '[class*="StoreName"]',
-      '[class*="name"]',
-      'h3', 'h4', 'strong',
-      'img[alt]'
-    ];
+    // Method 1: img alt text (most reliable — always present)
+    const img = card.querySelector('img[alt*="Rakuten"]');
+    if (img && img.alt) {
+      const name = img.alt.replace(/\s*-\s*Rakuten coupons and Cash Back/i, '').trim();
+      if (name) return name;
+    }
 
-    for (const sel of selectors) {
-      const el = card.querySelector(sel);
-      if (el) {
-        // Check for alt text on images
-        if (el.tagName === 'IMG' && el.alt) {
-          return el.alt.trim();
-        }
-        const text = el.textContent.trim();
-        if (text && !text.includes('%') && text.length < 100) {
-          return text;
-        }
+    // Method 2: first span that doesn't contain "%" or "Cash Back"
+    const spans = card.querySelectorAll('span');
+    for (const span of spans) {
+      const text = span.textContent.trim();
+      if (text && text.length < 80 && !text.includes('%') && !text.includes('Cash Back') && !text.includes('was ')) {
+        return text;
       }
+    }
+
+    // Method 3: any img alt text
+    const anyImg = card.querySelector('img[alt]');
+    if (anyImg && anyImg.alt) {
+      return anyImg.alt.trim();
     }
 
     return null;
@@ -275,40 +155,27 @@ const RakutenScraper = {
   extractCashbackRate(card) {
     const text = card.textContent || '';
 
-    // Look for various cashback patterns
-    const patterns = [
-      /(\d+(?:\.\d+)?%)\s*Cash\s*Back/i,
-      /Up\s*to\s*(\d+(?:\.\d+)?%)/i,
-      /(\d+(?:\.\d+)?%)\s*back/i,
-      /(\d+(?:\.\d+)?%)/
-    ];
+    // Look for "Up to X% Cash Back" first (more specific)
+    const upToMatch = text.match(/Up\s*to\s*(\d+(?:\.\d+)?%)\s*Cash\s*Back/i);
+    if (upToMatch) return 'Up to ' + upToMatch[1] + ' Cash Back';
 
-    for (const pattern of patterns) {
-      const match = text.match(pattern);
-      if (match) return match[1] + ' Cash Back';
-    }
+    // Then "X% Cash Back"
+    const cashbackMatch = text.match(/(\d+(?:\.\d+)?%)\s*Cash\s*Back/i);
+    if (cashbackMatch) return cashbackMatch[1] + ' Cash Back';
 
-    // Check for dollar amounts
+    // Then just percentage
+    const percentMatch = text.match(/(\d+(?:\.\d+)?%)\s*back/i);
+    if (percentMatch) return percentMatch[1] + ' Cash Back';
+
+    // Dollar amounts
     const dollarMatch = text.match(/\$(\d+(?:\.\d+)?)\s*(?:Cash\s*Back|back|bonus)/i);
     if (dollarMatch) return '$' + dollarMatch[1] + ' back';
 
     return 'See details';
   },
 
-  extractPortalUrl(card) {
-    if (card.tagName === 'A' && card.href) {
-      return card.href;
-    }
-
-    const link = card.querySelector('a[href*="/stores/"], a[href*="shop"]');
-    if (link) return link.href;
-
-    return null;
-  },
-
   async checkCurrentSite() {
     this.log('Checking for Rakuten button/extension on page...');
-    // Check for Rakuten button presence
     const rakutenPresent = document.querySelector(
       '[class*="rakuten"], [id*="rakuten"], [data-rakuten], #ebates-notif'
     );
@@ -335,31 +202,6 @@ const RakutenScraper = {
 
     this.log('No Rakuten button found on page');
     return { available: false };
-  },
-
-  async closeModal() {
-    this.log('Closing modal...');
-
-    // Try multiple selectors for the close button
-    const closeSelectors = [
-      '.chakra-modal__close-btn',
-      'button[aria-label="Close"]',
-      '[data-testid="modal-close"]',
-      '.chakra-modal__header button'
-    ];
-
-    for (const selector of closeSelectors) {
-      const closeButton = document.querySelector(selector);
-      if (closeButton) {
-        this.log('Found close button with selector:', selector);
-        closeButton.click();
-        return;
-      }
-    }
-
-    // Fallback: try pressing ESC key to close modal
-    this.log('No close button found, trying ESC key...');
-    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', keyCode: 27 }));
   },
 
   detectCategory(merchantName) {

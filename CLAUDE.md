@@ -10,9 +10,9 @@
 
 **Reward Maximizer** is a Chrome extension (Manifest v3) that helps users maximize credit card rewards by syncing, comparing, and stacking offers across multiple credit card portals and cashback platforms.
 
-**Version:** 2.0.0 | **Tech Stack:** Vanilla JS, Chrome Extension APIs, Chrome Storage API
+**Version:** 2.1.0 | **Tech Stack:** Vanilla JS, Chrome Extension APIs, Chrome Storage API
 
-**Core Features:** Scrapes offers from 7 bank portals (Amex, Chase, Citi, Capital One, Discover, BofA, US Bank) + 3 cashback platforms (Rakuten, Capital One Shopping, TopCashback). Compares values using point valuations, identifies stacking opportunities, shows merchant banners, and provides a centralized dashboard.
+**Core Features:** Scrapes offers from 7 bank portals (Amex, Chase, Citi, Capital One, Discover, BofA, US Bank) + 3 cashback platforms (Rakuten, Capital One Shopping, TopCashback). Compares values using point valuations, identifies stacking opportunities, shows merchant banners, and provides a centralized dashboard. Includes Rakuten referral links and Buy Me a Coffee tip jar for monetization.
 
 ---
 
@@ -36,6 +36,7 @@ Reward Maximizer/
 │   ├── valuation.js                   # Point value calculator
 │   └── export.js                      # CSV/JSON export
 ├── data/defaults.js                   # Default point values
+├── data/referral.js                   # Rakuten referral URL, BMAC URL, disclosure text
 ├── onboarding/                        # First-run welcome page
 ├── legal/                             # Privacy policy, terms of service
 └── icons/                             # Extension icons + promo images
@@ -153,4 +154,12 @@ Each scraper implements: `source`, `offersUrl`, `needsNavigation()`, `scrape()`,
 
 ---
 
-**Last Updated:** 2026-02-01
+**Last Updated:** 2026-01-31
+
+### Recent Updates (v2.1.0)
+- Added Rakuten referral link (merchant banner, popup stacking tip, popup empty state, onboarding)
+- Added Buy Me a Coffee tip jar (settings About section, popup footer, onboarding footer, support page)
+- Added affiliate disclosure to privacy policy, terms of service, and settings legal section
+- All referral/BMAC URLs centralized in `data/referral.js` for easy updates
+- Fixed Rakuten scraper: Rakuten redesigned their stores page, old selectors (`chakra-modal__body`, `a.chakra-button`, `[class*="store-card"]`) no longer exist. New primary selector is `a[role="group"].chakra-link` with merchant name from `img[alt]` and cashback rate from text content. Updated `offersUrl` to `/stores/all`.
+- Bumped version to 2.1.0
