@@ -1,11 +1,13 @@
 // Main content script coordinator
 // Routes messages to appropriate scrapers based on current site
+// Supports hybrid extraction: interceptor (primary) -> scraper (fallback)
 
-debug.log('[RMX-Content] Content script loaded');
+debug.log('[RMX-Orchestrator] Content script loaded');
 
 const AUTO_SYNC_KEY = 'rmx_auto_sync';
 
-// Detect which site we're on
+// ---- Site Detection ----
+
 function detectSite() {
   const host = window.location.hostname.toLowerCase();
 
@@ -22,7 +24,8 @@ function detectSite() {
   return null;
 }
 
-// Get the appropriate scraper for the current site
+// ---- Scraper Lookup (fallback layer) ----
+
 function getScraper(site) {
   switch (site) {
     case 'amex':
@@ -48,7 +51,172 @@ function getScraper(site) {
   }
 }
 
-// Handle scrape request
+// ---- Interceptor Lookup (primary layer) ----
+
+function getInterceptor(site) {
+  if (typeof ExtractorConfig === 'undefined' || !ExtractorConfig.isInterceptorEnabled(site)) {
+    return null;
+  }
+
+  switch (site) {
+    case 'amex':
+      return typeof AmexInterceptor !== 'undefined' ? AmexInterceptor : null;
+    case 'chase':
+      return typeof ChaseInterceptor !== 'undefined' ? ChaseInterceptor : null;
+    case 'citi':
+      return typeof CitiInterceptor !== 'undefined' ? CitiInterceptor : null;
+    case 'capital-one':
+      return typeof CapitalOneInterceptor !== 'undefined' ? CapitalOneInterceptor : null;
+    case 'discover':
+      return typeof DiscoverInterceptor !== 'undefined' ? DiscoverInterceptor : null;
+    case 'bofa':
+      return typeof BofAInterceptor !== 'undefined' ? BofAInterceptor : null;
+    case 'usbank':
+      return typeof USBankInterceptor !== 'undefined' ? USBankInterceptor : null;
+    default:
+      return null;
+  }
+}
+
+// ---- Interceptor Data Cache ----
+// Populated as API responses arrive via postMessage bridge.
+const interceptorCache = {};
+
+// Listen for messages from main world (interceptor bridge)
+if (typeof BaseInterceptor !== 'undefined') {
+  window.addEventListener('message', (event) => {
+    if (event.source !== window) return;
+    const msg = BaseInterceptor.parseMessageFromMainWorld(event);
+    if (!msg) return;
+
+    debug.log(`[RMX-Orchestrator] Received ${msg.action} from ${msg.portal}`, msg.meta);
+
+    if (msg.action === 'api_response' && msg.payload) {
+      const interceptor = getInterceptor(msg.portal);
+      if (interceptor && typeof interceptor.parseOffers === 'function') {
+        try {
+          const offers = interceptor.parseOffers(msg.payload, msg.meta);
+          if (offers && offers.length > 0) {
+            debug.log(`[RMX-Orchestrator] Parsed ${offers.length} offers from ${msg.portal} API`);
+            interceptorCache[msg.portal] = {
+              offers,
+              meta: msg.meta,
+              timestamp: Date.now(),
+              ready: true
+            };
+          }
+        } catch (err) {
+          debug.warn(`[RMX-Orchestrator] Failed to parse ${msg.portal} API response:`, err);
+        }
+      }
+    }
+
+    if (msg.action === 'activation_result') {
+      debug.log(`[RMX-Orchestrator] Activation result for ${msg.portal}:`, msg.payload);
+    }
+  });
+}
+
+/**
+ * Wait for interceptor data with timeout.
+ * Returns cached data or null.
+ */
+function waitForInterceptorData(portal, timeout) {
+  return new Promise(resolve => {
+    if (interceptorCache[portal] && interceptorCache[portal].ready) {
+      resolve(interceptorCache[portal]);
+      return;
+    }
+
+    const startTime = Date.now();
+    const checkInterval = setInterval(() => {
+      if (interceptorCache[portal] && interceptorCache[portal].ready) {
+        clearInterval(checkInterval);
+        resolve(interceptorCache[portal]);
+        return;
+      }
+      if (Date.now() - startTime >= timeout) {
+        clearInterval(checkInterval);
+        resolve(null);
+      }
+    }, 200);
+  });
+}
+
+// ---- Hybrid Extraction ----
+
+/**
+ * Try interceptor first, fall back to scraper.
+ * Returns { offers, added, totalFound, method }
+ */
+async function hybridExtract(site) {
+  const interceptor = getInterceptor(site);
+  const scraper = getScraper(site);
+  const timeout = (typeof ExtractorConfig !== 'undefined') ? ExtractorConfig.interceptorTimeout : 12000;
+
+  // Try interceptor if available
+  if (interceptor) {
+    debug.log(`[RMX-Orchestrator] Trying interceptor for ${site} (timeout: ${timeout}ms)`);
+
+    try {
+      if (typeof interceptor.init === 'function') {
+        await interceptor.init();
+      }
+
+      const cached = await waitForInterceptorData(site, timeout);
+
+      if (cached && cached.offers && cached.offers.length > 0) {
+        // Validate data quality — accept if enough offers or quality is good
+        const qualityOk = typeof BaseInterceptor !== 'undefined'
+          ? cached.offers.every(o => BaseInterceptor.assessDataQuality(o))
+          : true;
+
+        if (qualityOk || cached.offers.length >= 5) {
+          debug.log(`[RMX-Orchestrator] Interceptor success for ${site}: ${cached.offers.length} offers`);
+
+          if (typeof InterceptorHealth !== 'undefined') {
+            await InterceptorHealth.recordSuccess(site, cached.offers.length);
+          }
+
+          let added = 0;
+          if (typeof interceptor.activateAll === 'function') {
+            added = await interceptor.activateAll(cached.offers);
+          }
+
+          return {
+            offers: cached.offers,
+            added,
+            totalFound: cached.offers.length,
+            method: 'interceptor'
+          };
+        } else {
+          debug.warn(`[RMX-Orchestrator] Interceptor data quality too low for ${site}, falling back`);
+        }
+      } else {
+        debug.warn(`[RMX-Orchestrator] No interceptor data for ${site} within timeout`);
+      }
+    } catch (err) {
+      debug.error(`[RMX-Orchestrator] Interceptor error for ${site}:`, err);
+    }
+
+    // Record fallback
+    if (typeof InterceptorHealth !== 'undefined') {
+      await InterceptorHealth.recordFallback(site, 'no_data_or_quality_fail');
+    }
+  }
+
+  // Fallback to DOM scraper
+  if (scraper) {
+    debug.log(`[RMX-Orchestrator] Using DOM scraper for ${site}`);
+    const result = await scraper.scrape();
+    return { ...result, method: 'scraper' };
+  }
+
+  return { offers: [], added: 0, totalFound: 0, method: 'none' };
+}
+
+// ---- Handle Scrape Request ----
+
 async function handleScrapeRequest(sendResponse) {
   const site = detectSite();
 
@@ -58,15 +226,16 @@ async function handleScrapeRequest(sendResponse) {
   }
 
   const scraper = getScraper(site);
+  const interceptor = getInterceptor(site);
 
-  if (!scraper) {
+  if (!scraper && !interceptor) {
     sendResponse({ error: 'scraper_not_loaded', site });
     return;
   }
 
   try {
     // Check if we need to navigate to offers page
-    if (scraper.needsNavigation && scraper.needsNavigation()) {
+    if (scraper && scraper.needsNavigation && scraper.needsNavigation()) {
       const offersUrl = scraper.getOffersUrl();
       if (offersUrl) {
         localStorage.setItem(AUTO_SYNC_KEY, JSON.stringify({
@@ -80,32 +249,29 @@ async function handleScrapeRequest(sendResponse) {
       }
     }
 
-    // Run the scraper
-    debug.log('[RMX-Content] About to run scraper for', site);
-    const result = await scraper.scrape();
-    debug.log('[RMX-Content] Scraper completed. Offers count:', result.offers?.length);
-    debug.log('[RMX-Content] Sending response to popup:', {
-      site,
-      offersCount: result.offers?.length,
-      sample: result.offers?.[0]
-    });
+    // Run hybrid extraction
+    debug.log('[RMX-Orchestrator] Starting hybrid extraction for', site);
+    const result = await hybridExtract(site);
+    debug.log(`[RMX-Orchestrator] Extraction complete via ${result.method}:`, result.offers?.length, 'offers');
 
     const response = {
       site,
       offers: result.offers || [],
       added: result.added || 0,
-      totalFound: result.totalFound || result.offers?.length || 0
+      totalFound: result.totalFound || result.offers?.length || 0,
+      method: result.method
     };
 
     sendResponse(response);
-    debug.log('[RMX-Content] Response sent to popup');
+    debug.log('[RMX-Orchestrator] Response sent to popup');
   } catch (err) {
-    debug.error('[RMX-Content] Scrape failed:', err);
+    debug.error('[RMX-Orchestrator] Extraction failed:', err);
     sendResponse({ error: err?.message || 'scrape_failed', site });
   }
 }
 
-// Auto-sync if pending
+// ---- Auto-Sync ----
+
 async function autoSyncIfPending() {
   const pendingStr = localStorage.getItem(AUTO_SYNC_KEY);
   if (!pendingStr) return;
@@ -114,40 +280,37 @@ async function autoSyncIfPending() {
     const pending = JSON.parse(pendingStr);
     if (pending.status !== 'pending') return;
 
-    // Check if this is the right site
     const currentSite = detectSite();
     if (currentSite !== pending.site) return;
 
     const scraper = getScraper(currentSite);
     if (!scraper) return;
 
-    // Check if we're on the offers page now
     if (scraper.needsNavigation && scraper.needsNavigation()) return;
 
-    // Update status
     localStorage.setItem(AUTO_SYNC_KEY, JSON.stringify({
       ...pending,
       status: 'running'
     }));
 
-    debug.log('[RMX-Content] Auto-sync starting for', currentSite);
+    debug.log('[RMX-Orchestrator] Auto-sync starting for', currentSite);
 
-    const result = await scraper.scrape();
+    const result = await hybridExtract(currentSite);
 
-    // Store offers
     if (result.offers && result.offers.length > 0) {
       await mergeAndStoreOffers(result.offers, currentSite);
     }
 
-    debug.log('[RMX-Content] Auto-sync complete:', result.offers?.length, 'offers');
+    debug.log(`[RMX-Orchestrator] Auto-sync complete via ${result.method}:`, result.offers?.length, 'offers');
   } catch (err) {
-    debug.warn('[RMX-Content] Auto-sync failed:', err);
+    debug.warn('[RMX-Orchestrator] Auto-sync failed:', err);
   } finally {
     localStorage.removeItem(AUTO_SYNC_KEY);
   }
 }
 
-// Merge and store offers using Chrome storage
+// ---- Merge & Store ----
+
 function mergeAndStoreOffers(newOffers, source) {
   return new Promise((resolve) => {
     chrome.storage.local.get(['rmx_offers'], (result) => {
@@ -176,7 +339,8 @@ function mergeAndStoreOffers(newOffers, source) {
   });
 }
 
-// Listen for messages from popup
+// ---- Message Listener ----
+
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === 'scrape_offers') {
     handleScrapeRequest(sendResponse);
@@ -186,16 +350,17 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === 'get_site_info') {
     const site = detectSite();
     const scraper = getScraper(site);
+    const interceptor = getInterceptor(site);
     sendResponse({
       site,
       scraperLoaded: !!scraper,
+      interceptorLoaded: !!interceptor,
       url: window.location.href
     });
     return false;
   }
 
   if (request.action === 'check_portal') {
-    // For Capital One - check if current site has portal cashback
     if (typeof CapitalOneScraper !== 'undefined' && CapitalOneScraper.checkCurrentSite) {
       CapitalOneScraper.checkCurrentSite().then(result => {
         sendResponse(result);
@@ -207,7 +372,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
 });
 
-// Check for pending sync from popup navigation
+// ---- Pending Sync from Popup ----
+
 async function checkPendingSyncFromPopup() {
   try {
     const result = await chrome.storage.local.get(['rmx_pending_sync']);
@@ -216,40 +382,34 @@ async function checkPendingSyncFromPopup() {
     const { source, timestamp } = result.rmx_pending_sync;
     const currentSite = detectSite();
 
-    // Check if this is the site we were waiting for
     if (currentSite === source) {
-      debug.log('[RMX-Content] Found pending sync from popup for', source);
-
-      // Clear the flag
+      debug.log('[RMX-Orchestrator] Found pending sync from popup for', source);
       await chrome.storage.local.remove('rmx_pending_sync');
 
-      // Wait a moment for page to settle
       setTimeout(async () => {
         const scraper = getScraper(currentSite);
-        if (!scraper) return;
+        const interceptor = getInterceptor(currentSite);
+        if (!scraper && !interceptor) return;
 
-        debug.log('[RMX-Content] Auto-syncing after navigation...');
+        debug.log('[RMX-Orchestrator] Auto-syncing after navigation...');
 
-        // Notify service worker sync is starting
         chrome.runtime.sendMessage({
           action: 'start_sync',
           portal: currentSite
         }).catch(() => {});
 
         try {
-          const result = await scraper.scrape();
-          if (result.offers && result.offers.length > 0) {
-            await mergeAndStoreOffers(result.offers, currentSite);
-            debug.log('[RMX-Content] Auto-sync complete:', result.offers.length, 'offers saved');
+          const syncResult = await hybridExtract(currentSite);
+          if (syncResult.offers && syncResult.offers.length > 0) {
+            await mergeAndStoreOffers(syncResult.offers, currentSite);
+            debug.log(`[RMX-Orchestrator] Auto-sync complete via ${syncResult.method}:`, syncResult.offers.length, 'offers saved');
 
-            // Notify service worker of successful sync
             chrome.runtime.sendMessage({
               action: 'complete_sync',
               portal: currentSite,
-              offersCount: result.offers.length
+              offersCount: syncResult.offers.length
             }).catch(() => {});
           } else {
-            // No offers but sync complete
             chrome.runtime.sendMessage({
               action: 'complete_sync',
               portal: currentSite,
@@ -257,27 +417,42 @@ async function checkPendingSyncFromPopup() {
             }).catch(() => {});
           }
         } catch (err) {
-          debug.error('[RMX-Content] Auto-sync failed:', err);
-
-          // Notify service worker of error
+          debug.error('[RMX-Orchestrator] Auto-sync failed:', err);
           chrome.runtime.sendMessage({
             action: 'sync_error',
             portal: currentSite,
             error: err.message
           }).catch(() => {});
         }
-      }, 2000); // Wait 2 seconds for page to fully load
+      }, 2000);
     }
   } catch (err) {
-    debug.error('[RMX-Content] Error checking pending sync:', err);
+    debug.error('[RMX-Orchestrator] Error checking pending sync:', err);
   }
 }
 
-// Run auto-sync checks on page load
+// ---- Initialize Interceptor on Page Load ----
+
+(function initInterceptor() {
+  const site = detectSite();
+  if (!site) return;
+
+  const interceptor = getInterceptor(site);
+  if (interceptor && typeof interceptor.inject === 'function') {
+    debug.log(`[RMX-Orchestrator] Injecting interceptor for ${site}`);
+    try {
+      interceptor.inject();
+    } catch (err) {
+      debug.warn(`[RMX-Orchestrator] Failed to inject interceptor for ${site}:`, err);
+    }
+  }
+})();
+
+// ---- Startup ----
+
 autoSyncIfPending();
 checkPendingSyncFromPopup();
 
-// Notify background script that content script is ready
 chrome.runtime.sendMessage({
   action: 'content_script_ready',
   site: detectSite(),
