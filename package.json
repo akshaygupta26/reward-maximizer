@@ -1,0 +1,28 @@
+{
+  "name": "reward-maximizer",
+  "version": "1.0.0",
+  "description": "**Chrome extension to sync, compare, and stack credit card offers for maximum rewards.**",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs",
+    "lib": "lib"
+  },
+  "scripts": {
+    "test": "jest --verbose"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/akshaygupta26/reward-maximizer.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/akshaygupta26/reward-maximizer/issues"
+  },
+  "homepage": "https://github.com/akshaygupta26/reward-maximizer#readme",
+  "devDependencies": {
+    "jest": "^30.2.0"
+  }
+}

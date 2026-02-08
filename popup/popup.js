@@ -55,15 +55,15 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Check for ongoing sync progress
   async function checkSyncProgress() {
     try {
-      const response = await chrome.runtime.sendMessage({ action: 'get_sync_progress' });
-      if (response?.progress?.isRunning) {
-        const { progress } = response;
-        const total = progress.completed.length + progress.remaining.length;
-        const current = progress.completed.length;
+      const result = await chrome.storage.local.get(['rmx_sync_progress']);
+      const progress = result.rmx_sync_progress;
+      if (progress?.isRunning) {
+        const total = (progress.completed?.length || 0) + (progress.remaining?.length || 0);
+        const current = progress.completed?.length || 0;
 
         if (progress.currentPortal) {
           updateStatus(`Syncing ${progress.currentPortal}... (${current}/${total})`, 'success');
-        } else if (progress.remaining.length > 0) {
+        } else if (progress.remaining?.length > 0) {
           updateStatus(`Sync in progress... (${current}/${total} complete)`, 'success');
         }
       }
@@ -97,8 +97,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
       }
 
-      // Extract merchant name from hostname
-      const merchantName = hostname.split('.')[0];
+      // Extract merchant name from hostname, handling subdomains like shop.lululemon.com
+      const parts = hostname.split('.');
+      const merchantName = parts.length >= 3 ? parts[parts.length - 2] : parts[0];
       debug.log('[RMX-Popup] Checking for offers matching:', merchantName);
 
       // Find matching offers using fuzzy matching
@@ -308,6 +309,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       // All done - service worker will show notification
       updateStatus('All syncs complete! Check notification for results.', 'success');
 
+      // Clear sync progress
+      await chrome.storage.local.remove('rmx_sync_progress');
+
       // Reload offers
       await loadData();
       applyFilters();
@@ -319,6 +323,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     } finally {
       syncAllBtn.disabled = false;
       syncAllBtn.textContent = originalText;
+      // Ensure sync progress is cleared even on error
+      await chrome.storage.local.remove('rmx_sync_progress').catch(() => {});
     }
   }
 
@@ -402,10 +408,72 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
 
       // Already on the right site, trigger scrape
-      btn.textContent = 'Syncing...';
+      btn.textContent = '⏹ Stop';
+      btn.disabled = false;
+      btn.classList.add('syncing');
+
+      // Track whether user requested stop
+      let stopRequested = false;
+
+      // Allow clicking to stop sync
+      const stopHandler = async (e) => {
+        e.stopImmediatePropagation();
+        stopRequested = true;
+        debug.log('[RMX-Popup] Stop sync requested for', source);
+        btn.textContent = 'Stopping...';
+        btn.disabled = true;
+        try {
+          await sendMessageToTab(tab.id, { action: 'stop_sync' });
+        } catch (e) {}
+        updateStatus('Sync stopped.', 'success');
+      };
+      btn.addEventListener('click', stopHandler, { once: true });
 
       // Send scrape message
       const response = await sendMessageToTab(tab.id, { action: 'scrape_offers' });
+
+      // Remove stop handler once sync completes
+      btn.removeEventListener('click', stopHandler);
+
+      // If user stopped, don't process results further — just show what we got
+      if (stopRequested) {
+        if (response?.offers && response.offers.length > 0) {
+          await Storage.saveOffers(response.offers, source);
+          await Storage.updateSyncHistory(source);
+          await loadData();
+          applyFilters();
+          render();
+          updateStatus(`Stopped. Saved ${response.offers.length} offers found so far.`, 'success');
+        }
+        btn.textContent = originalText;
+        btn.disabled = false;
+        btn.classList.remove('active');
+        return;
+      }
+
+      if (response?.error === 'sync_in_progress') {
+        // Sync is already running in background — show stop button
+        btn.textContent = '⏹ Stop';
+        btn.disabled = false;
+        btn.classList.add('syncing');
+        updateStatus('Sync in progress... Click Stop to cancel.', 'success');
+
+        await new Promise((resolve) => {
+          const bgStopHandler = async (e) => {
+            e.stopImmediatePropagation();
+            try {
+              await sendMessageToTab(tab.id, { action: 'stop_sync' });
+            } catch (err) {}
+            btn.textContent = originalText;
+            btn.disabled = false;
+            btn.classList.remove('syncing', 'active');
+            updateStatus('Sync stopped.', 'success');
+            resolve();
+          };
+          btn.addEventListener('click', bgStopHandler, { once: true });
+        });
+        return;
+      }
 
       if (response?.error) {
         throw new Error(response.error);
@@ -471,7 +539,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     } finally {
       btn.textContent = originalText;
       btn.disabled = false;
-      btn.classList.remove('active');
+      btn.classList.remove('active', 'syncing');
     }
   }
 

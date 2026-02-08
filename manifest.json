@@ -61,7 +61,8 @@
         "content/scrapers/chase.js",
         "content/content-main.js"
       ],
-      "run_at": "document_start"
+      "run_at": "document_start",
+      "all_frames": true
     },
     {
       "matches": [

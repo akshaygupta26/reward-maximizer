@@ -151,7 +151,7 @@ Each scraper implements: `source`, `offersUrl`, `needsNavigation()`, `scrape()`,
 
 ## Testing
 
-**Unit tests:** 143 tests across 10 suites (Jest) — `npm test`
+**Unit tests:** 177 tests across 10 suites (Jest) — `npm test` (173 passing, 4 pre-existing failures)
 - `tests/valuation.test.js` (28), `tests/categories.test.js` (16), `tests/storage.test.js` (15), `tests/merchant-matching.test.js` (18)
 - `tests/extractor-config.test.js` (11), `tests/base-interceptor.test.js` (15), `tests/interceptor-health.test.js` (8)
 - `tests/chase-interceptor.test.js` (10), `tests/amex-interceptor.test.js` (8), `tests/interceptor-fallback.test.js` (14)
@@ -187,11 +187,14 @@ Each scraper implements: `source`, `offersUrl`, `needsNavigation()`, `scrape()`,
 ### TODO (Next Session)
 - **Live API endpoint discovery** — Interceptors use heuristic URL patterns and field names. Log into each portal with `ExtractorConfig.logRawResponses = true` to discover actual API shapes, then refine `urlPatterns` and `_parse*Offer()` field mappings per portal.
 - **Amex multi-card activation** — `AmexInterceptor.activateAll()` is a skeleton. Implement once activation endpoint is discovered.
-- **Fix Chase scraper** — Two issues:
-  1. **Offers don't auto-populate after opt-in completes.** Post-opt-in sync should seamlessly save and display offers without requiring a second manual sync.
-  2. **Offer value parsing is dirty.** Values contain extra text like `"5% cash back 27 days left Success Added"`. The `extractValue()` method needs to strip trailing status text.
+- **Chase post-opt-in auto-populate** — After opt-in completes, offers should auto-save without requiring a second manual sync.
 
 ### Recent Updates
+- **Bug fixes from live Chase testing (2026-02-01):**
+  - Fixed Chase dirty offer values — added `cleanValue()` to `content/scrapers/chase.js` stripping status text ("X days left", "Success", "Added", etc.)
+  - Fixed merchant banner subdomain bug — `merchant-banner.js` and `popup.js` now extract domain name correctly from subdomains (e.g., "lululemon" from "shop.lululemon.com")
+  - Fixed sync stop not persisting — `content-main.js` now persists `_syncStopped` flag in localStorage so it survives page reloads during Chase click-and-return flow
+  - Fixed popup sync progress cleanup — `popup.js` now clears `rmx_sync_progress` from storage after sync completes and properly resets button states
 - **Network interceptor layer** — Added hybrid extraction architecture: API response observation (fetch/XHR wrapping) as primary method, DOM scrapers as fallback. 7 portal interceptors, shared base utilities, per-portal feature flags, health tracking. 66 new tests (143 total). Bank portal content scripts now run at `document_start`. See `docs/plans/2026-02-01-network-interceptor-layer.md` for full design.
 - Added Rakuten referral link, Buy Me a Coffee tip jar, affiliate disclosures (v2.1.0)
 - Fixed Rakuten scraper for redesigned stores page (v2.1.0)

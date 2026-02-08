@@ -46,9 +46,12 @@ async function checkForOffers() {
       return;
     }
 
-    // Extract merchant name from hostname
-    const hostname = window.location.hostname.replace('www.', '').toLowerCase();
-    const merchantName = hostname.split('.')[0];
+    // Extract merchant name from hostname, handling subdomains like shop.lululemon.com
+    const hostname = window.location.hostname.toLowerCase();
+    const parts = hostname.replace(/^www\./, '').split('.');
+    // Use second-to-last part (domain name) if there are 3+ parts (subdomain.domain.tld)
+    // Otherwise use the first part (domain.tld)
+    const merchantName = parts.length >= 3 ? parts[parts.length - 2] : parts[0];
 
     debug.log('[RMX-Banner] Checking for offers matching:', merchantName);
 

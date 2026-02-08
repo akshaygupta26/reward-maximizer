@@ -211,7 +211,9 @@ const ChaseInterceptor = {
       return 0;
     }
 
-    debug.log(`[RMX-Interceptor-Chase] Activating ${toActivate.length} offers via click-tracking`);
+    // TODO: Remove this bypass after testing offer reading
+    debug.log(`[RMX-Interceptor-Chase] Would activate ${toActivate.length} offers (activation disabled for testing)`);
+    return 0;
 
     // Build activation URLs — the activationUrl field contains the relative path
     // starting with /ccb/..., prefixed with the reco.chase.com base

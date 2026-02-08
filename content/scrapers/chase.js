@@ -51,14 +51,17 @@ const ChaseScraper = {
       const added = await this.clickAndReturn();
 
       // Clean offers for storage (remove any DOM references)
-      const cleaned = offers.map(offer => ({
-        merchant: offer.merchant,
-        value: offer.value,
-        expiry: offer.expiry || 'Check portal',
-        merchantCategory: this.detectCategory(offer.merchant),
-        valueType: this.parseValueType(offer.value),
-        timestamp: Date.now()
-      }));
+      const cleaned = offers.map(offer => {
+        const cleanedValue = this.cleanValue(offer.value);
+        return {
+          merchant: offer.merchant,
+          value: cleanedValue,
+          expiry: offer.expiry || 'Check portal',
+          merchantCategory: this.detectCategory(offer.merchant),
+          valueType: this.parseValueType(cleanedValue),
+          timestamp: Date.now()
+        };
+      });
 
       this.log('Scrape complete:', cleaned.length, 'offers,', added, 'opted in');
       return { offers: cleaned, added, totalFound: cleaned.length };
@@ -415,6 +418,22 @@ const ChaseScraper = {
       return Categories.detectCategory(merchantName);
     }
     return 'other';
+  },
+
+  // Clean value string by removing trailing status text
+  cleanValue(value) {
+    if (!value) return value;
+    // Remove trailing status text: "X days left", "Expiring soon", "Last day",
+    // "Success", "Added", "Add offer", "New", "Expiring..."
+    return value
+      .replace(/\s*\d+\s*days?\s*left/gi, '')
+      .replace(/\s*Expiring\s*(?:soon|\.{3})?/gi, '')
+      .replace(/\s*Last\s*day/gi, '')
+      .replace(/\s*Success/gi, '')
+      .replace(/\s*Added/gi, '')
+      .replace(/\s*Add\s*offer/gi, '')
+      .replace(/\s*New$/gi, '')
+      .trim();
   },
 
   // Parse value type
