@@ -30,6 +30,7 @@ const BaseInterceptor = {
   generateMainWorldScript({ portal, urlPatterns, captureActivation = false, nonce }) {
     const patternsJSON = JSON.stringify(urlPatterns);
     const messageType = this.MESSAGE_TYPE;
+    const debugEnabled = typeof DEBUG !== 'undefined' ? DEBUG : false;
 
     return `
 (function() {
@@ -39,6 +40,7 @@ const BaseInterceptor = {
   var RMX_MSG_TYPE = ${JSON.stringify(messageType)};
   var RMX_NONCE = ${JSON.stringify(nonce || '')};
   var RMX_CAPTURE_ACTIVATION = ${captureActivation};
+  var RMX_DEBUG = ${debugEnabled};
 
   function urlMatchesPatterns(url) {
     if (!url) return false;
@@ -75,11 +77,11 @@ const BaseInterceptor = {
     if (args[1] && args[1].method) { method = args[1].method.toUpperCase(); }
     else if (args[0] && typeof args[0] !== 'string' && args[0].method) { method = args[0].method.toUpperCase(); }
 
-    console.log('[RMX-MainWorld-' + RMX_PORTAL + '] fetch intercepted:', method, url.substring(0, 120));
+    RMX_DEBUG && console.log('[RMX-MainWorld-' + RMX_PORTAL + '] fetch intercepted:', method, url.substring(0, 120));
     if (!urlMatchesPatterns(url)) {
       return originalFetch.apply(this, args);
     }
-    console.log('[RMX-MainWorld-' + RMX_PORTAL + '] URL MATCHED:', url.substring(0, 200));
+    RMX_DEBUG && console.log('[RMX-MainWorld-' + RMX_PORTAL + '] URL MATCHED:', url.substring(0, 200));
     if (method !== 'GET' && !RMX_CAPTURE_ACTIVATION) {
       return originalFetch.apply(this, args);
     }
@@ -88,17 +90,17 @@ const BaseInterceptor = {
       try {
         var cloned = response.clone();
         var ct = cloned.headers.get('content-type') || '';
-        console.log('[RMX-MainWorld-' + RMX_PORTAL + '] Response CT:', ct, 'status:', response.status);
+        RMX_DEBUG && console.log('[RMX-MainWorld-' + RMX_PORTAL + '] Response CT:', ct, 'status:', response.status);
         if (isJSONResponse(ct)) {
           cloned.json().then(function(data) {
-            console.log('[RMX-MainWorld-' + RMX_PORTAL + '] Parsed JSON, sending to content script');
+            RMX_DEBUG && console.log('[RMX-MainWorld-' + RMX_PORTAL + '] Parsed JSON, sending to content script');
             var action = (method === 'GET') ? 'api_response' : 'activation_response';
             sendToContentScript(action, data, {
               url: url, method: method, status: response.status, timestamp: Date.now()
             });
-          }).catch(function(e) { console.log('[RMX-MainWorld-' + RMX_PORTAL + '] JSON parse failed:', e.message); });
+          }).catch(function(e) { RMX_DEBUG && console.log('[RMX-MainWorld-' + RMX_PORTAL + '] JSON parse failed:', e.message); });
         }
-      } catch (e) { console.log('[RMX-MainWorld-' + RMX_PORTAL + '] Error:', e.message); }
+      } catch (e) { RMX_DEBUG && console.log('[RMX-MainWorld-' + RMX_PORTAL + '] Error:', e.message); }
       return response;
     });
   };
@@ -116,7 +118,7 @@ const BaseInterceptor = {
 
   OrigXHR.prototype.send = function() {
     var xhr = this;
-    console.log('[RMX-MainWorld-' + RMX_PORTAL + '] XHR:', xhr._rmx_method, (xhr._rmx_url || '').substring(0, 120));
+    RMX_DEBUG && console.log('[RMX-MainWorld-' + RMX_PORTAL + '] XHR:', xhr._rmx_method, (xhr._rmx_url || '').substring(0, 120));
     if (urlMatchesPatterns(xhr._rmx_url)) {
       var shouldCapture = (xhr._rmx_method === 'GET') || RMX_CAPTURE_ACTIVATION;
       if (shouldCapture) {

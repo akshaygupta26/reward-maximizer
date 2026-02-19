@@ -151,7 +151,7 @@ Each scraper implements: `source`, `offersUrl`, `needsNavigation()`, `scrape()`,
 
 ## Testing
 
-**Unit tests:** 177 tests across 10 suites (Jest) — `npm test` (173 passing, 4 pre-existing failures)
+**Unit tests:** 177 tests across 10 suites (Jest) — `npm test` (174 passing, 3 pre-existing failures)
 - `tests/valuation.test.js` (28), `tests/categories.test.js` (16), `tests/storage.test.js` (15), `tests/merchant-matching.test.js` (18)
 - `tests/extractor-config.test.js` (11), `tests/base-interceptor.test.js` (15), `tests/interceptor-health.test.js` (8)
 - `tests/chase-interceptor.test.js` (10), `tests/amex-interceptor.test.js` (8), `tests/interceptor-fallback.test.js` (14)
@@ -169,7 +169,7 @@ Each scraper implements: `source`, `offersUrl`, `needsNavigation()`, `scrape()`,
 - All icons & promo images present
 - All permissions justified by code usage
 - Privacy policy & terms accessible
-- No data exfiltration, no debugger, no localhost, no console.log outside debug.js
+- No data exfiltration, no debugger, no localhost, all console.log gated behind DEBUG flag
 - `<all_urls>` justification: "Required to display merchant offer alerts on any shopping website"
 
 **URLs:**
@@ -182,14 +182,22 @@ Each scraper implements: `source`, `offersUrl`, `needsNavigation()`, `scrape()`,
 
 ---
 
-**Last Updated:** 2026-02-01
+**Last Updated:** 2026-02-18
 
 ### TODO (Next Session)
+- **Live scraping tests** — Test scrapers on actual bank portals (requires login). Amex, Chase, Citi, BofA, etc.
+- **Banner dismiss persistence** — Dismiss state uses in-memory flag, resets on page reload and SPA navigation (known issues 6.3, 6.5)
 - **Live API endpoint discovery** — Interceptors use heuristic URL patterns and field names. Log into each portal with `ExtractorConfig.logRawResponses = true` to discover actual API shapes, then refine `urlPatterns` and `_parse*Offer()` field mappings per portal.
 - **Amex multi-card activation** — `AmexInterceptor.activateAll()` is a skeleton. Implement once activation endpoint is discovered.
 - **Chase post-opt-in auto-populate** — After opt-in completes, offers should auto-save without requiring a second manual sync.
+- **CSP inline script warnings** — 2 runtime errors on extension pages about inline script CSP violations (non-blocking but worth investigating)
 
 ### Recent Updates
+- **Automated integration testing (2026-02-18):**
+  - 56/56 automated tests passed via Chrome DevTools Protocol
+  - Sections tested: Onboarding, Popup UI, Settings, Deduplication, Sync Navigation, Import/Export, Export, Edge Cases, Production Readiness
+  - Merchant banner tested on live sites: Nike (banner appears with Amex recommendation + Rakuten stacking), AmEx (no banner, correct exclusion), Wikipedia (no banner, correct no-match)
+  - Fixed production blockers: DEBUG=false, logRawResponses=false, base-interceptor.js console.logs gated behind RMX_DEBUG
 - **Bug fixes from live Chase testing (2026-02-01):**
   - Fixed Chase dirty offer values — added `cleanValue()` to `content/scrapers/chase.js` stripping status text ("X days left", "Success", "Added", etc.)
   - Fixed merchant banner subdomain bug — `merchant-banner.js` and `popup.js` now extract domain name correctly from subdomains (e.g., "lululemon" from "shop.lululemon.com")

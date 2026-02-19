@@ -281,13 +281,7 @@ async function checkMerchantOffers(hostname, tabId) {
   }
 }
 
-// Alarm for periodic offer refresh (optional future feature)
-chrome.alarms.onAlarm.addListener((alarm) => {
-  if (alarm.name === 'refresh_offers') {
-    debug.log('[RMX-SW] Periodic refresh triggered');
-    // Could trigger background sync here in future
-  }
-});
+
 
 // Sync progress management functions
 function startSyncProgress(portal) {
