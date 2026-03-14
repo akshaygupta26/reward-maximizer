@@ -1,0 +1,750 @@
+/* ============================================
+   Reward Maximizer — Onboarding Wizard
+   onboarding/onboarding.css
+   ============================================ */
+
+@import url('../shared/theme.css');
+
+/* --- Page Layout --- */
+body {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  overflow: hidden;
+  background: var(--rmx-bg-primary);
+  background-image:
+    radial-gradient(ellipse 80% 60% at 50% -10%, rgba(99, 102, 241, 0.15), transparent),
+    radial-gradient(ellipse 60% 50% at 80% 100%, rgba(139, 92, 246, 0.1), transparent);
+}
+
+/* --- Wizard Container --- */
+.wizard-container {
+  width: 100%;
+  max-width: 640px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/* --- Progress Dots --- */
+.wizard-progress {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 32px;
+}
+
+.wizard-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: var(--rmx-radius-full);
+  background: rgba(255, 255, 255, 0.12);
+  transition: all var(--rmx-transition-slow);
+}
+
+.wizard-dot.active {
+  width: 32px;
+  background: var(--rmx-accent-gradient);
+  box-shadow: 0 0 12px rgba(99, 102, 241, 0.4);
+}
+
+.wizard-dot.completed {
+  background: var(--rmx-accent-primary);
+  opacity: 0.6;
+}
+
+/* --- Steps Viewport --- */
+.wizard-viewport {
+  position: relative;
+  overflow: hidden;
+  flex: 1;
+}
+
+.wizard-step {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(60px);
+  transition: opacity 0.4s ease, transform 0.4s ease;
+}
+
+.wizard-step.active {
+  position: relative;
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateX(0);
+}
+
+.wizard-step.exit-left {
+  opacity: 0;
+  transform: translateX(-60px);
+}
+
+.wizard-step.enter-right {
+  transform: translateX(60px);
+  opacity: 0;
+}
+
+.wizard-step.exit-right {
+  opacity: 0;
+  transform: translateX(60px);
+}
+
+.wizard-step.enter-left {
+  transform: translateX(-60px);
+  opacity: 0;
+}
+
+/* --- Step Content Glass Card --- */
+.step-card {
+  background: var(--rmx-glass-bg);
+  border: 1px solid var(--rmx-glass-border);
+  border-radius: var(--rmx-radius-lg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  padding: 40px 36px;
+  box-shadow: var(--rmx-shadow-lg);
+}
+
+/* --- Step 1: Welcome --- */
+.welcome-icon {
+  width: 72px;
+  height: 72px;
+  margin: 0 auto 24px;
+  border-radius: 20px;
+  background: var(--rmx-accent-gradient);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 32px rgba(99, 102, 241, 0.3);
+}
+
+.welcome-icon svg {
+  width: 36px;
+  height: 36px;
+  color: white;
+}
+
+.step-title {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--rmx-text-primary);
+  text-align: center;
+  margin-bottom: 8px;
+  letter-spacing: -0.02em;
+}
+
+.step-subtitle {
+  font-size: var(--rmx-font-lg);
+  color: var(--rmx-text-secondary);
+  text-align: center;
+  margin-bottom: 32px;
+  line-height: 1.5;
+}
+
+.stats-row {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.stat-item {
+  flex: 1;
+  text-align: center;
+  padding: 16px 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--rmx-glass-border);
+  border-radius: var(--rmx-radius-md);
+}
+
+.stat-value {
+  font-size: var(--rmx-font-2xl);
+  font-weight: 700;
+  color: var(--rmx-money);
+  display: block;
+  margin-bottom: 4px;
+}
+
+.stat-label {
+  font-size: var(--rmx-font-sm);
+  color: var(--rmx-text-secondary);
+}
+
+/* --- Step 2: How It Works --- */
+.how-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.how-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 20px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--rmx-glass-border);
+  border-radius: var(--rmx-radius-md);
+  transition: border-color var(--rmx-transition-base);
+}
+
+.how-card:hover {
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.how-number {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: var(--rmx-accent-gradient);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--rmx-font-md);
+  font-weight: 700;
+  color: white;
+}
+
+.how-text h3 {
+  font-size: var(--rmx-font-lg);
+  font-weight: 600;
+  color: var(--rmx-text-primary);
+  margin-bottom: 4px;
+}
+
+.how-text p {
+  font-size: var(--rmx-font-md);
+  color: var(--rmx-text-secondary);
+  line-height: 1.5;
+}
+
+/* --- Step 3: Select Your Cards --- */
+.card-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.card-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: var(--rmx-radius-md);
+  border: 1px solid var(--rmx-glass-border);
+  background: rgba(255, 255, 255, 0.03);
+  cursor: pointer;
+  transition: all var(--rmx-transition-base);
+  user-select: none;
+}
+
+.card-option:hover {
+  border-color: rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.card-option input[type="checkbox"] {
+  display: none;
+}
+
+.card-check {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  border: 2px solid rgba(255, 255, 255, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--rmx-transition-base);
+}
+
+.card-check svg {
+  width: 14px;
+  height: 14px;
+  opacity: 0;
+  transform: scale(0.5);
+  transition: all var(--rmx-transition-base);
+}
+
+.card-option.selected .card-check {
+  border-color: transparent;
+  background: var(--rmx-accent-gradient);
+}
+
+.card-option.selected .card-check svg {
+  opacity: 1;
+  transform: scale(1);
+  color: white;
+}
+
+.card-logo {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--rmx-font-xs);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.card-name {
+  font-size: var(--rmx-font-md);
+  font-weight: 500;
+  color: var(--rmx-text-primary);
+  flex: 1;
+}
+
+.card-tag {
+  font-size: var(--rmx-font-xs);
+  padding: 2px 8px;
+  border-radius: var(--rmx-radius-full);
+  font-weight: 600;
+}
+
+.card-tag.coming-soon {
+  background: var(--rmx-warning-bg);
+  color: var(--rmx-warning);
+  border: 1px solid var(--rmx-warning-border);
+}
+
+/* Brand-colored logo backgrounds */
+.card-logo.amex { background: var(--rmx-brand-amex-bg); color: var(--rmx-brand-amex-text); }
+.card-logo.chase { background: var(--rmx-brand-chase-bg); color: var(--rmx-brand-chase-text); }
+.card-logo.citi { background: var(--rmx-brand-citi-bg); color: var(--rmx-brand-citi-text); }
+.card-logo.capital-one { background: var(--rmx-brand-capital-one-bg); color: var(--rmx-brand-capital-one-text); }
+.card-logo.discover { background: var(--rmx-brand-discover-bg); color: var(--rmx-brand-discover-text); }
+.card-logo.bofa { background: var(--rmx-brand-bofa-bg); color: var(--rmx-brand-bofa-text); }
+.card-logo.usbank { background: var(--rmx-brand-usbank-bg); color: var(--rmx-brand-usbank-text); }
+.card-logo.rakuten { background: var(--rmx-brand-rakuten-bg); color: var(--rmx-brand-rakuten-text); }
+.card-logo.capital-one-shopping { background: var(--rmx-brand-capital-one-shopping-bg); color: var(--rmx-brand-capital-one-shopping-text); }
+.card-logo.topcashback { background: var(--rmx-brand-topcashback-bg); color: var(--rmx-brand-topcashback-text); }
+
+/* Disabled card options */
+.card-option.disabled {
+  opacity: 0.45;
+  cursor: default;
+  pointer-events: none;
+}
+
+/* Section labels within step 3 */
+.card-section-label {
+  font-size: var(--rmx-font-sm);
+  font-weight: 600;
+  color: var(--rmx-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 10px;
+  margin-top: 20px;
+}
+
+.card-section-label:first-child {
+  margin-top: 0;
+}
+
+.card-validation-msg {
+  text-align: center;
+  font-size: var(--rmx-font-sm);
+  color: var(--rmx-error);
+  margin-top: 12px;
+  opacity: 0;
+  transition: opacity var(--rmx-transition-base);
+}
+
+.card-validation-msg.visible {
+  opacity: 1;
+}
+
+/* Rakuten referral hint */
+.referral-hint {
+  grid-column: 1 / -1;
+  font-size: var(--rmx-font-sm);
+  color: var(--rmx-text-secondary);
+  margin-top: 4px;
+  padding-left: 4px;
+}
+
+.referral-hint a {
+  color: var(--rmx-accent-primary);
+  text-decoration: none;
+  transition: color var(--rmx-transition-fast);
+}
+
+.referral-hint a:hover {
+  color: var(--rmx-accent-secondary);
+  text-decoration: underline;
+}
+
+.referral-disc {
+  font-size: var(--rmx-font-xs);
+  color: var(--rmx-text-tertiary);
+}
+
+/* --- Step 4: Privacy & Preferences --- */
+.privacy-badge {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 18px 20px;
+  background: var(--rmx-success-bg);
+  border: 1px solid var(--rmx-success-border);
+  border-radius: var(--rmx-radius-md);
+  margin-bottom: 28px;
+}
+
+.privacy-badge-icon {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: var(--rmx-success-gradient);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.privacy-badge-icon svg {
+  width: 20px;
+  height: 20px;
+  color: white;
+}
+
+.privacy-badge-text h4 {
+  font-size: var(--rmx-font-md);
+  font-weight: 600;
+  color: var(--rmx-success);
+  margin-bottom: 2px;
+}
+
+.privacy-badge-text p {
+  font-size: var(--rmx-font-sm);
+  color: var(--rmx-text-secondary);
+  line-height: 1.4;
+}
+
+.privacy-badge-text a {
+  color: var(--rmx-success);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.privacy-badge-text a:hover {
+  color: var(--rmx-money);
+}
+
+.toggle-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.toggle-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 18px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--rmx-glass-border);
+  border-radius: var(--rmx-radius-md);
+}
+
+.toggle-label h4 {
+  font-size: var(--rmx-font-md);
+  font-weight: 500;
+  color: var(--rmx-text-primary);
+  margin-bottom: 2px;
+}
+
+.toggle-label p {
+  font-size: var(--rmx-font-sm);
+  color: var(--rmx-text-secondary);
+}
+
+/* Toggle switch */
+.toggle-switch {
+  position: relative;
+  width: 44px;
+  height: 24px;
+  flex-shrink: 0;
+}
+
+.toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.toggle-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: var(--rmx-radius-full);
+  transition: all var(--rmx-transition-base);
+}
+
+.toggle-slider::before {
+  content: '';
+  position: absolute;
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 3px;
+  background: white;
+  border-radius: 50%;
+  transition: all var(--rmx-transition-base);
+}
+
+.toggle-switch input:checked + .toggle-slider {
+  background: var(--rmx-accent-gradient);
+}
+
+.toggle-switch input:checked + .toggle-slider::before {
+  transform: translateX(20px);
+}
+
+/* --- Step 5: All Set --- */
+.celebration-icon {
+  width: 80px;
+  height: 80px;
+  margin: 0 auto 24px;
+  border-radius: 50%;
+  background: var(--rmx-success-gradient);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 32px rgba(16, 185, 129, 0.3);
+  animation: celebrationPulse 2s ease-in-out infinite;
+}
+
+@keyframes celebrationPulse {
+  0%, 100% { box-shadow: 0 8px 32px rgba(16, 185, 129, 0.3); }
+  50% { box-shadow: 0 8px 48px rgba(16, 185, 129, 0.5); }
+}
+
+.celebration-icon svg {
+  width: 40px;
+  height: 40px;
+  color: white;
+}
+
+.tip-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 28px;
+}
+
+.tip-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 16px 18px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--rmx-glass-border);
+  border-radius: var(--rmx-radius-md);
+}
+
+.tip-icon {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tip-icon.accent {
+  background: var(--rmx-accent-bg);
+}
+
+.tip-icon.money {
+  background: var(--rmx-money-bg);
+}
+
+.tip-icon.warning {
+  background: var(--rmx-warning-bg);
+}
+
+.tip-icon svg {
+  width: 18px;
+  height: 18px;
+}
+
+.tip-icon.accent svg { color: var(--rmx-accent-primary); }
+.tip-icon.money svg { color: var(--rmx-money); }
+.tip-icon.warning svg { color: var(--rmx-warning); }
+
+.tip-text h4 {
+  font-size: var(--rmx-font-md);
+  font-weight: 500;
+  color: var(--rmx-text-primary);
+  margin-bottom: 2px;
+}
+
+.tip-text p {
+  font-size: var(--rmx-font-sm);
+  color: var(--rmx-text-secondary);
+  line-height: 1.4;
+}
+
+/* --- Navigation Bar --- */
+.wizard-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 28px;
+  gap: 12px;
+}
+
+.wizard-nav .nav-spacer {
+  flex: 1;
+}
+
+.btn-back {
+  background: transparent;
+  color: var(--rmx-text-secondary);
+  border: 1px solid var(--rmx-glass-border);
+  border-radius: var(--rmx-radius-full);
+  padding: 12px 28px;
+  font-size: var(--rmx-font-md);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--rmx-transition-base);
+}
+
+.btn-back:hover {
+  color: var(--rmx-text-primary);
+  border-color: rgba(255, 255, 255, 0.2);
+  background: var(--rmx-glass-bg);
+}
+
+.btn-back.hidden {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.btn-continue {
+  background: var(--rmx-accent-gradient);
+  color: white;
+  border: none;
+  border-radius: var(--rmx-radius-full);
+  padding: 12px 32px;
+  font-size: var(--rmx-font-md);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--rmx-transition-base);
+  box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+}
+
+.btn-continue:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4);
+}
+
+.btn-continue:active {
+  transform: translateY(0);
+}
+
+.btn-continue:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.btn-continue.success {
+  background: var(--rmx-success-gradient);
+  box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+}
+
+.btn-continue.success:hover {
+  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+}
+
+/* --- Footer --- */
+.wizard-footer {
+  text-align: center;
+  margin-top: 24px;
+  font-size: var(--rmx-font-sm);
+  color: var(--rmx-text-tertiary);
+}
+
+.wizard-footer a {
+  color: var(--rmx-text-secondary);
+  text-decoration: none;
+  transition: color var(--rmx-transition-fast);
+}
+
+.wizard-footer a:hover {
+  color: var(--rmx-text-primary);
+}
+
+.wizard-footer .footer-sep {
+  margin: 0 6px;
+  opacity: 0.4;
+}
+
+/* --- Messages / Errors --- */
+.wizard-message {
+  padding: 12px 16px;
+  border-radius: var(--rmx-radius-sm);
+  font-size: var(--rmx-font-md);
+  text-align: center;
+  margin-top: 16px;
+  transition: opacity var(--rmx-transition-base);
+}
+
+.wizard-message.error {
+  background: var(--rmx-error-bg);
+  border: 1px solid var(--rmx-error-border);
+  color: var(--rmx-error);
+}
+
+.wizard-message.warning {
+  background: var(--rmx-warning-bg);
+  border: 1px solid var(--rmx-warning-border);
+  color: var(--rmx-warning);
+}
+
+/* --- Responsive --- */
+@media (max-width: 600px) {
+  body {
+    padding: 16px;
+  }
+
+  .step-card {
+    padding: 28px 20px;
+  }
+
+  .step-title {
+    font-size: 22px;
+  }
+
+  .card-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .stats-row {
+    flex-wrap: wrap;
+  }
+
+  .stat-item {
+    min-width: 100px;
+  }
+}

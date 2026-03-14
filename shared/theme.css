@@ -1,0 +1,202 @@
+/* ============================================
+   Reward Maximizer — Dark Premium Theme
+   shared/theme.css
+   ============================================ */
+
+/* --- CSS Reset --- */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* --- Design Tokens --- */
+:root {
+  /* Backgrounds */
+  --rmx-bg-primary: #0f172a;
+  --rmx-bg-secondary: #1e293b;
+  --rmx-bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+
+  /* Glass surfaces */
+  --rmx-glass-bg: rgba(255, 255, 255, 0.05);
+  --rmx-glass-border: rgba(255, 255, 255, 0.08);
+  --rmx-glass-hover: rgba(255, 255, 255, 0.08);
+  --rmx-glass-active: rgba(255, 255, 255, 0.12);
+
+  /* Accent */
+  --rmx-accent-primary: #6366f1;
+  --rmx-accent-secondary: #8b5cf6;
+  --rmx-accent-gradient: linear-gradient(135deg, #6366f1, #8b5cf6);
+  --rmx-accent-bg: rgba(99, 102, 241, 0.15);
+  --rmx-accent-border: rgba(99, 102, 241, 0.3);
+
+  /* Money / values */
+  --rmx-money: #34d399;
+  --rmx-money-bg: rgba(52, 211, 153, 0.12);
+  --rmx-money-border: rgba(52, 211, 153, 0.25);
+
+  /* Text */
+  --rmx-text-primary: #f8fafc;
+  --rmx-text-secondary: rgba(255, 255, 255, 0.4);
+  --rmx-text-tertiary: rgba(255, 255, 255, 0.25);
+
+  /* Success */
+  --rmx-success: #10b981;
+  --rmx-success-secondary: #059669;
+  --rmx-success-gradient: linear-gradient(135deg, #10b981, #059669);
+  --rmx-success-bg: rgba(16, 185, 129, 0.12);
+  --rmx-success-border: rgba(16, 185, 129, 0.25);
+
+  /* Warning */
+  --rmx-warning: #fbbf24;
+  --rmx-warning-bg: rgba(251, 191, 36, 0.12);
+  --rmx-warning-border: rgba(251, 191, 36, 0.25);
+
+  /* Error */
+  --rmx-error: #f87171;
+  --rmx-error-bg: rgba(248, 113, 113, 0.12);
+  --rmx-error-border: rgba(248, 113, 113, 0.25);
+
+  /* Brand colors — translucent backgrounds + solid text */
+  --rmx-brand-amex-bg: rgba(0, 111, 207, 0.25);
+  --rmx-brand-amex-text: #60a5fa;
+  --rmx-brand-amex-solid: #006FCF;
+
+  --rmx-brand-chase-bg: rgba(17, 122, 202, 0.25);
+  --rmx-brand-chase-text: #60a5fa;
+  --rmx-brand-chase-solid: #117ACA;
+
+  --rmx-brand-citi-bg: rgba(0, 59, 112, 0.25);
+  --rmx-brand-citi-text: #93c5fd;
+  --rmx-brand-citi-solid: #003B70;
+
+  --rmx-brand-capital-one-bg: rgba(208, 48, 39, 0.25);
+  --rmx-brand-capital-one-text: #fca5a5;
+  --rmx-brand-capital-one-solid: #D03027;
+
+  --rmx-brand-discover-bg: rgba(255, 102, 0, 0.25);
+  --rmx-brand-discover-text: #fdba74;
+  --rmx-brand-discover-solid: #FF6600;
+
+  --rmx-brand-bofa-bg: rgba(1, 33, 105, 0.25);
+  --rmx-brand-bofa-text: #93c5fd;
+  --rmx-brand-bofa-solid: #012169;
+
+  --rmx-brand-usbank-bg: rgba(12, 35, 64, 0.25);
+  --rmx-brand-usbank-text: #93c5fd;
+  --rmx-brand-usbank-solid: #0C2340;
+
+  --rmx-brand-rakuten-bg: rgba(191, 0, 0, 0.25);
+  --rmx-brand-rakuten-text: #fca5a5;
+  --rmx-brand-rakuten-solid: #BF0000;
+
+  --rmx-brand-capital-one-shopping-bg: rgba(208, 48, 39, 0.2);
+  --rmx-brand-capital-one-shopping-text: #fca5a5;
+  --rmx-brand-capital-one-shopping-solid: #D03027;
+
+  --rmx-brand-topcashback-bg: rgba(0, 150, 100, 0.25);
+  --rmx-brand-topcashback-text: #6ee7b7;
+  --rmx-brand-topcashback-solid: #009664;
+
+  /* Radii */
+  --rmx-radius-sm: 8px;
+  --rmx-radius-md: 12px;
+  --rmx-radius-lg: 14px;
+  --rmx-radius-xl: 16px;
+  --rmx-radius-full: 9999px;
+
+  /* Shadows */
+  --rmx-shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.15);
+  --rmx-shadow-md: 0 8px 24px rgba(0, 0, 0, 0.2);
+  --rmx-shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.25);
+  --rmx-shadow-xl: 0 20px 60px rgba(0, 0, 0, 0.35);
+
+  /* Typography */
+  --rmx-font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --rmx-font-xs: 11px;
+  --rmx-font-sm: 12px;
+  --rmx-font-base: 13px;
+  --rmx-font-md: 14px;
+  --rmx-font-lg: 16px;
+  --rmx-font-xl: 20px;
+  --rmx-font-2xl: 24px;
+  --rmx-font-3xl: 32px;
+
+  /* Transitions */
+  --rmx-transition-fast: 150ms ease;
+  --rmx-transition-base: 200ms ease;
+  --rmx-transition-slow: 300ms ease;
+  --rmx-transition-spring: 400ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* --- Body Base --- */
+body {
+  font-family: var(--rmx-font-family);
+  background: var(--rmx-bg-gradient);
+  color: var(--rmx-text-primary);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* --- Utility: Glass Panel --- */
+.rmx-glass {
+  background: var(--rmx-glass-bg);
+  border: 1px solid var(--rmx-glass-border);
+  border-radius: var(--rmx-radius-lg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+/* --- Utility: Accent Button --- */
+.rmx-btn-accent {
+  background: var(--rmx-accent-gradient);
+  color: white;
+  border: none;
+  border-radius: var(--rmx-radius-full);
+  padding: 10px 24px;
+  font-size: var(--rmx-font-md);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--rmx-transition-base);
+  box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+}
+.rmx-btn-accent:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4);
+}
+.rmx-btn-accent:active {
+  transform: translateY(0);
+}
+
+/* --- Utility: Glass Button --- */
+.rmx-btn-glass {
+  background: var(--rmx-glass-bg);
+  color: var(--rmx-text-primary);
+  border: 1px solid var(--rmx-glass-border);
+  border-radius: var(--rmx-radius-full);
+  padding: 10px 24px;
+  font-size: var(--rmx-font-md);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--rmx-transition-base);
+}
+.rmx-btn-glass:hover {
+  background: var(--rmx-glass-hover);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+/* --- Scrollbar --- */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.25);
+}

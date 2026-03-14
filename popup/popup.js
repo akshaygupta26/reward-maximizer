@@ -36,6 +36,39 @@ document.addEventListener('DOMContentLoaded', async () => {
   await initializeUserCards();
   debug.log('[RMX-Popup] Setting up event listeners...');
   setupEventListeners();
+
+  // Listen for batch opt-in progress from content scripts
+  chrome.runtime.onMessage.addListener((message) => {
+    if (message.action === 'batch_progress') {
+      const { source, current, total, merchant, phase, result } = message;
+
+      if (phase === 'starting') {
+        updateStatus(`Activating ${total} ${formatSource(source)} offers...`, 'success');
+      } else if (phase === 'discovering') {
+        updateStatus(`${formatSource(source)}: Discovering activation API...`, 'success');
+      } else if (phase === 'activating') {
+        const pct = total > 0 ? Math.round((current / total) * 100) : 0;
+        updateStatus(
+          `${formatSource(source)}: ${current}/${total} activated via API (${pct}%)${merchant ? ' \u2014 ' + merchant : ''}`,
+          'success'
+        );
+      } else if (phase === 'fallback') {
+        updateStatus(`${formatSource(source)}: Using fallback mode...`, 'success');
+      } else if (phase === 'clicking') {
+        const pct = total > 0 ? Math.round((current / total) * 100) : 0;
+        updateStatus(
+          `${formatSource(source)}: ${current}/${total} activated (${pct}%)${merchant ? ' \u2014 ' + merchant : ''}`,
+          'success'
+        );
+      } else if (phase === 'complete' && result) {
+        const msg = result.failed > 0
+          ? `${formatSource(source)}: ${result.added} activated, ${result.failed} failed`
+          : `${formatSource(source)}: All ${result.added} offers activated!`;
+        updateStatus(msg, result.failed > 0 ? 'warning' : 'success');
+      }
+    }
+    return false;
+  });
   debug.log('[RMX-Popup] Applying initial filters...');
   applyFilters(); // Populate filteredOffers from offers
   debug.log('[RMX-Popup] Checking for ongoing sync...');
@@ -126,7 +159,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         updateStatus(`Found ${matchingOffers.length} offer(s) for ${matchingOffers[0].merchant}`, 'success');
 
         // Highlight the search box briefly
-        searchInput.style.background = '#fef3c7';
+        searchInput.style.background = 'rgba(99,102,241,0.15)';
         setTimeout(() => {
           searchInput.style.background = '';
         }, 2000);
@@ -745,19 +778,19 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       return `
         <div class="merchant-card fade-in">
-          <div class="merchant-header" style="background: ${sourceInfo.color}15">
-            <span class="merchant-name" style="color: ${sourceInfo.color}">${sourceInfo.name}</span>
+          <div class="merchant-header card-view-header">
+            <span class="merchant-name">${sourceInfo.name}</span>
             <span class="merchant-category">${group.offers.length} offers</span>
           </div>
           <div class="merchant-offers">
             ${group.offers.slice(0, 10).map(offer => `
               <div class="offer-row">
-                <span class="merchant-name" style="flex: 1; font-size: 12px;">${escapeHtml(offer.merchant)}</span>
+                <span class="card-view-merchant">${escapeHtml(offer.merchant)}</span>
                 <span class="offer-value">${escapeHtml(offer.value)}</span>
               </div>
             `).join('')}
             ${group.offers.length > 10 ? `
-              <div class="offer-row" style="justify-content: center; color: #64748b;">
+              <div class="offer-row overflow-text">
                 +${group.offers.length - 10} more offers
               </div>
             ` : ''}
@@ -779,12 +812,12 @@ document.addEventListener('DOMContentLoaded', async () => {
           ${group.offers.slice(0, 8).map(offer => `
             <div class="offer-row">
               <span class="offer-source ${offer.source}">${formatSource(offer.source)}</span>
-              <span style="flex: 1; margin-left: 10px; font-size: 12px;">${escapeHtml(offer.merchant)}</span>
+              <span class="card-view-merchant">${escapeHtml(offer.merchant)}</span>
               <span class="offer-value">${escapeHtml(offer.value)}</span>
             </div>
           `).join('')}
           ${group.offers.length > 8 ? `
-            <div class="offer-row" style="justify-content: center; color: #64748b;">
+            <div class="offer-row overflow-text">
               +${group.offers.length - 8} more offers
             </div>
           ` : ''}
@@ -798,22 +831,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     debug.log('[RMX-Popup] Export button clicked. Offers count:', offers.length, 'Filtered:', filteredOffers.length);
 
     const menu = document.createElement('div');
-    menu.style.cssText = `
-      position: fixed;
-      bottom: 60px;
-      right: 16px;
-      background: white;
-      border-radius: 8px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-      padding: 8px 0;
-      z-index: 1000;
-    `;
+    menu.className = 'export-menu';
 
     menu.innerHTML = `
-      <button style="display: block; width: 100%; padding: 8px 16px; border: none; background: none; text-align: left; cursor: pointer; font-size: 13px;" id="exportCSV">
+      <button id="exportCSV">
         Export as CSV (${filteredOffers.length} offers)
       </button>
-      <button style="display: block; width: 100%; padding: 8px 16px; border: none; background: none; text-align: left; cursor: pointer; font-size: 13px;" id="exportJSON">
+      <button id="exportJSON">
         Export as JSON (${filteredOffers.length} offers)
       </button>
     `;

@@ -22,11 +22,14 @@ describe('ExtractorConfig', () => {
     ]));
   });
 
-  test('bank portals have interceptor enabled', () => {
-    for (const p of ['amex', 'chase', 'citi', 'capital-one', 'bofa', 'discover', 'usbank']) {
+  test('bank portals have interceptor enabled (except Chase — CSP blocks inline injection)', () => {
+    for (const p of ['amex', 'citi', 'capital-one', 'bofa', 'discover', 'usbank']) {
       expect(ExtractorConfig.portals[p].interceptor).toBe(true);
       expect(ExtractorConfig.portals[p].fallbackToScraper).toBe(true);
     }
+    // Chase uses its own MAIN world interceptor via manifest, not BaseInterceptor
+    expect(ExtractorConfig.portals.chase.interceptor).toBe(false);
+    expect(ExtractorConfig.portals.chase.fallbackToScraper).toBe(true);
   });
 
   test('cashback portals have interceptor disabled', () => {
@@ -39,7 +42,7 @@ describe('ExtractorConfig', () => {
   describe('isInterceptorEnabled', () => {
     test('returns true for enabled portals', () => {
       expect(ExtractorConfig.isInterceptorEnabled('amex')).toBe(true);
-      expect(ExtractorConfig.isInterceptorEnabled('chase')).toBe(true);
+      expect(ExtractorConfig.isInterceptorEnabled('citi')).toBe(true);
     });
 
     test('returns false for disabled portals', () => {

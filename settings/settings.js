@@ -151,7 +151,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       })
       .map(([program, cards]) => `
         <div class="valuation-group">
-          <h3 style="font-size: 14px; color: #64748b; margin-bottom: 12px; text-transform: uppercase;">
+          <h3 class="valuation-group-header">
             ${formatProgramName(program)}
           </h3>
           ${cards.map(card => `
@@ -225,7 +225,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         <div class="stat-label">My Cards</div>
       </div>
       <div class="stat-item">
-        <div class="stat-value" style="font-size: 14px;">${lastSyncText}</div>
+        <div class="stat-value stat-value-sm">${lastSyncText}</div>
         <div class="stat-label">Last Sync</div>
       </div>
     `;

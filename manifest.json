@@ -40,10 +40,21 @@
         "content/utils.js",
         "content/interceptors/base-interceptor.js",
         "content/interceptors/amex-interceptor.js",
+        "content/batch-optin.js",
         "content/scrapers/amex.js",
         "content/content-main.js"
       ],
       "run_at": "document_start"
+    },
+    {
+      "matches": [
+        "https://*.chase.com/*"
+      ],
+      "js": [
+        "content/chase-api-interceptor.js"
+      ],
+      "run_at": "document_start",
+      "world": "MAIN"
     },
     {
       "matches": [
@@ -57,6 +68,7 @@
         "content/utils.js",
         "content/interceptors/base-interceptor.js",
         "content/interceptors/chase-interceptor.js",
+        "content/batch-optin.js",
         "content/scrapers/chase.js",
         "content/content-main.js"
       ],
@@ -203,7 +215,7 @@
   ],
   "web_accessible_resources": [
     {
-      "resources": ["lib/*.js", "data/*.js"],
+      "resources": ["lib/*.js", "data/*.js", "shared/*.css"],
       "matches": ["<all_urls>"]
     }
   ]

@@ -2,17 +2,30 @@
 // Extracted here since the banner script runs in browser context
 
 /**
- * Merchant matching logic from merchant-banner.js:56-60
+ * Merchant matching logic from merchant-banner.js
+ * Updated: requires 3+ char minimum for substring matching to avoid
+ * false positives like "x" matching "Expedia"
  */
 function matchesMerchant(offerMerchant, hostname) {
-  const merchantName = hostname.replace('www.', '').toLowerCase().split('.')[0];
+  // Extract domain name, handling subdomains like shop.lululemon.com
+  const parts = hostname.replace(/^www\./, '').toLowerCase().split('.');
+  const merchantName = parts.length >= 3 ? parts[parts.length - 2] : parts[0];
   const offerName = offerMerchant.toLowerCase();
 
-  return (
-    offerName.includes(merchantName) ||
-    merchantName.includes(offerName) ||
-    offerName.replace(/[^a-z0-9]/g, '') === merchantName.replace(/[^a-z0-9]/g, '')
-  );
+  const normalizedSite = merchantName.replace(/[^a-z0-9]/g, '');
+  const normalizedOffer = offerName.replace(/[^a-z0-9]/g, '');
+
+  // Exact match after normalization (always allowed)
+  if (normalizedOffer === normalizedSite) return true;
+
+  // Substring matching only when both sides are 3+ chars
+  if (normalizedSite.length >= 3 && normalizedOffer.length >= 3) {
+    if (offerName.includes(merchantName) || merchantName.includes(offerName)) {
+      return true;
+    }
+  }
+
+  return false;
 }
 
 describe('Merchant Matching', () => {
@@ -77,10 +90,39 @@ describe('Merchant Matching', () => {
     });
   });
 
+  describe('short hostname protection', () => {
+    test('"Expedia" does NOT match x.com (single-char hostname)', () => {
+      expect(matchesMerchant('Expedia', 'x.com')).toBe(false);
+    });
+
+    test('"Express" does NOT match x.com', () => {
+      expect(matchesMerchant('Express', 'x.com')).toBe(false);
+    });
+
+    test('"AT" does NOT match at.com via substring', () => {
+      // "at" is 2 chars — below threshold for substring matching
+      expect(matchesMerchant('AT&T', 'www.at.com')).toBe(false);
+    });
+
+    test('"HM" matches hm.com via exact normalized match', () => {
+      // Exact match works regardless of length
+      expect(matchesMerchant('HM', 'www.hm.com')).toBe(true);
+    });
+  });
+
+  describe('subdomain handling', () => {
+    test('"Lululemon" matches shop.lululemon.com', () => {
+      expect(matchesMerchant('Lululemon', 'shop.lululemon.com')).toBe(true);
+    });
+
+    test('"Nike" matches store.nike.com', () => {
+      expect(matchesMerchant('Nike', 'store.nike.com')).toBe(true);
+    });
+  });
+
   describe('edge cases', () => {
-    test('empty merchant name does not match', () => {
-      expect(matchesMerchant('', 'www.nike.com')).toBe(true);
-      // Empty string is included in everything — known edge case
+    test('empty merchant name does not match non-empty hostname', () => {
+      expect(matchesMerchant('', 'www.nike.com')).toBe(false);
     });
 
     test('special characters are stripped for comparison', () => {

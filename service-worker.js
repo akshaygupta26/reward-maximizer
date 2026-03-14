@@ -90,6 +90,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     sendResponse({ progress: syncProgress });
     return false;
   }
+
+  // Batch opt-in progress — let it propagate to popup, no action needed here
+  if (message.action === 'batch_progress') {
+    return false;
+  }
 });
 
 // Handle content script initialization

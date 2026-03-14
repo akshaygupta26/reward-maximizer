@@ -58,47 +58,39 @@ const AmexScraper = {
         timestamp: Date.now()
       }));
 
-      // Second pass: click ALL add buttons one by one
-      // Re-query the DOM for each click to handle dynamic updates
+      // Second pass: batch opt-in using fast sequential engine
       let added = 0;
-      let maxAttempts = 100; // Safety limit
-      let attempts = 0;
+      try {
+        const batchResult = await BatchOptIn.run({
+          source: 'amex',
 
-      while (attempts < maxAttempts) {
-        attempts++;
+          findButtons: () => {
+            return Array.from(
+              document.querySelectorAll('button[data-testid="merchantOfferListAddButton"]')
+            );
+          },
 
-        // Find the FIRST available (not yet clicked) add button
-        const addButtons = document.querySelectorAll('button[data-testid="merchantOfferListAddButton"]');
-        let clickedOne = false;
+          isAlreadyAdded: (btn) => {
+            if (btn.disabled) return true;
+            const text = (btn.textContent || '').toLowerCase();
+            const title = (btn.getAttribute('title') || '').toLowerCase();
+            return text.includes('added') || title.includes('added');
+          },
 
-        for (const btn of addButtons) {
-          // Skip if disabled or already processed (button might change after click)
-          if (btn.disabled) continue;
+          getMerchantName: (btn) => {
+            const card = AmexScraper.findCardForButton(btn);
+            const label = (btn.getAttribute('aria-label') || btn.getAttribute('title') || '').trim();
+            return AmexScraper.extractMerchant(card, label) || 'Unknown';
+          },
 
-          // Check if button is still clickable (not in "added" state)
-          const btnText = (btn.textContent || '').toLowerCase();
-          const btnTitle = (btn.getAttribute('title') || '').toLowerCase();
-          if (btnText.includes('added') || btnTitle.includes('added')) continue;
+          minDelay: 250,       // Amex handles fast clicks well
+          maxDelay: 1500,      // Timeout if DOM never stabilizes
+          scrollToButton: true  // Amex needs scroll for lazy-loaded offers
+        });
 
-          try {
-            this.log(`Clicking add button ${added + 1}...`);
-            btn.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            await this.wait(300);
-            btn.click();
-            added++;
-            clickedOne = true;
-            await this.wait(1000); // Wait for Amex to process
-            break; // Process one at a time, then re-query
-          } catch (err) {
-            this.log('Failed to click button:', err);
-          }
-        }
-
-        // If we didn't click anything this round, we're done
-        if (!clickedOne) {
-          this.log('No more buttons to click');
-          break;
-        }
+        added = batchResult.added;
+      } catch (batchErr) {
+        this.log('BatchOptIn failed, offers still collected:', batchErr);
       }
 
       this.log(`Scrape complete: ${collectedOffers.length} offers found, ${added} clicked`);

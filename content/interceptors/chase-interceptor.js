@@ -211,47 +211,90 @@ const ChaseInterceptor = {
       return 0;
     }
 
-    // TODO: Remove this bypass after testing offer reading
-    debug.log(`[RMX-Interceptor-Chase] Would activate ${toActivate.length} offers (activation disabled for testing)`);
-    return 0;
+    debug.log(`[RMX-Interceptor-Chase] Activating ${toActivate.length} offers via click-tracking`);
+
+    // Report progress start
+    this._reportProgress('starting', 0, toActivate.length, '');
 
     // Build activation URLs — the activationUrl field contains the relative path
     // starting with /ccb/..., prefixed with the reco.chase.com base
     const urls = toActivate.map(o => {
       const path = o.activationUrl;
-      // Path from API starts with /ccb/... — convert to interaction endpoint
-      // The click-tracking uses customer-interaction instead of events
       return this._activationBaseUrl + path;
     });
 
-    // Inject a script into main world to fire all activation GETs
-    // Using Image beacons — simplest cross-origin GET with cookies
-    const script = `
-      (function() {
-        var urls = ${JSON.stringify(urls)};
-        var count = 0;
-        urls.forEach(function(url) {
-          var img = new Image();
-          img.onload = img.onerror = function() { count++; };
-          img.src = url;
-        });
-      })();
-    `;
+    // Fire activation requests in batches to avoid overwhelming the server
+    // and to provide meaningful progress updates
+    const BATCH_SIZE = 10;
+    let activated = 0;
 
+    for (let i = 0; i < urls.length; i += BATCH_SIZE) {
+      const batch = urls.slice(i, i + BATCH_SIZE);
+      const batchOffers = toActivate.slice(i, i + BATCH_SIZE);
+
+      // Inject a script into main world to fire this batch of activation GETs
+      // Using Image beacons — simplest cross-origin GET with same-site cookies
+      const script = `
+        (function() {
+          var urls = ${JSON.stringify(batch)};
+          urls.forEach(function(url) {
+            var img = new Image();
+            img.src = url;
+          });
+        })();
+      `;
+
+      try {
+        const scriptEl = document.createElement('script');
+        scriptEl.textContent = script;
+        (document.head || document.documentElement).appendChild(scriptEl);
+        scriptEl.remove();
+
+        activated += batch.length;
+
+        // Report progress
+        const lastMerchant = batchOffers[batchOffers.length - 1]?.merchant || '';
+        this._reportProgress('clicking', activated, toActivate.length, lastMerchant);
+
+        // Brief pause between batches to let requests fire
+        if (i + BATCH_SIZE < urls.length) {
+          await new Promise(r => setTimeout(r, 500));
+        }
+      } catch (err) {
+        debug.warn(`[RMX-Interceptor-Chase] Batch activation failed at ${i}:`, err.message);
+      }
+    }
+
+    // Wait for final batch of requests to fire
+    await new Promise(r => setTimeout(r, 1000));
+
+    debug.log(`[RMX-Interceptor-Chase] Fired ${activated} activation requests`);
+
+    // Report completion
+    this._reportProgress('complete', toActivate.length, toActivate.length, '', {
+      added: activated, failed: toActivate.length - activated, skipped: 0, total: toActivate.length
+    });
+
+    return activated;
+  },
+
+  /**
+   * Report activation progress to popup via chrome.runtime.sendMessage
+   */
+  _reportProgress(phase, current, total, merchant, result) {
     try {
-      const scriptEl = document.createElement('script');
-      scriptEl.textContent = script;
-      (document.head || document.documentElement).appendChild(scriptEl);
-      scriptEl.remove();
-
-      // Wait briefly for requests to fire
-      await new Promise(r => setTimeout(r, 2000));
-
-      debug.log(`[RMX-Interceptor-Chase] Fired ${urls.length} activation requests`);
-      return toActivate.length;
-    } catch (err) {
-      debug.warn('[RMX-Interceptor-Chase] Activation failed:', err.message);
-      return 0;
+      const msg = {
+        action: 'batch_progress',
+        source: 'chase',
+        current,
+        total,
+        merchant,
+        phase
+      };
+      if (result) msg.result = result;
+      chrome.runtime.sendMessage(msg);
+    } catch (e) {
+      // Popup might be closed
     }
   }
 };

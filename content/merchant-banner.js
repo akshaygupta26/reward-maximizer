@@ -6,7 +6,18 @@ debug.log('[RMX-Banner] Script loaded on', window.location.hostname);
 // State
 let bannerElement = null;
 let currentOffers = [];
-let isDismissed = false;
+// Per-site session dismiss: stored in sessionStorage so it survives SPA nav + page reloads
+const DISMISS_KEY = 'rmx_banner_dismissed';
+
+function isSiteDismissed() {
+  try { return sessionStorage.getItem(DISMISS_KEY) === '1'; }
+  catch (e) { return false; }
+}
+
+function dismissSite() {
+  try { sessionStorage.setItem(DISMISS_KEY, '1'); }
+  catch (e) { /* private browsing may block sessionStorage */ }
+}
 
 // Initialize banner on page load
 async function init() {
@@ -55,21 +66,29 @@ async function checkForOffers() {
 
     debug.log('[RMX-Banner] Checking for offers matching:', merchantName);
 
-    // Find matching offers
+    // Find matching offers — require minimum 3 chars for substring matching
+    // to avoid false positives like "x" matching "Expedia"
+    const normalizedSite = merchantName.replace(/[^a-z0-9]/g, '');
+
     currentOffers = allOffers.filter(offer => {
       const offerMerchant = offer.merchant.toLowerCase();
-      const match = offerMerchant.includes(merchantName) ||
-                    merchantName.includes(offerMerchant) ||
-                    offerMerchant.replace(/[^a-z0-9]/g, '') === merchantName.replace(/[^a-z0-9]/g, '');
+      const normalizedOffer = offerMerchant.replace(/[^a-z0-9]/g, '');
 
-      if (match) {
-        debug.log('[RMX-Banner] Match found:', offer.merchant, '|', offer.value, '|', offer.source);
+      // Exact match after normalization (always allowed)
+      if (normalizedOffer === normalizedSite) return true;
+
+      // Substring matching only when both sides are 3+ chars
+      if (normalizedSite.length >= 3 && normalizedOffer.length >= 3) {
+        if (offerMerchant.includes(merchantName) || merchantName.includes(offerMerchant)) {
+          return true;
+        }
       }
-      return match;
+
+      return false;
     });
 
     if (currentOffers.length > 0) {
-      debug.log('[RMX-Banner] Found', currentOffers.length, 'offers for this merchant');
+      debug.log('[RMX-Banner] Found', currentOffers.length, 'offers for', merchantName);
       showBanner();
 
       // Notify background to update badge
@@ -87,8 +106,8 @@ async function checkForOffers() {
 
 // Show the banner
 function showBanner() {
-  if (isDismissed || bannerElement) {
-    return; // Already dismissed or already showing
+  if (isSiteDismissed() || bannerElement) {
+    return; // Already dismissed for this site or already showing
   }
 
   // Sort offers by value (card offers first, then stacking partners)
@@ -130,20 +149,38 @@ function showBanner() {
   debug.log('[RMX-Banner] Banner displayed');
 }
 
+// Get brand color for source
+function getSourceColor(source) {
+  const colors = {
+    'amex': '#60a5fa',
+    'chase': '#60a5fa',
+    'citi': '#93c5fd',
+    'capital-one': '#fca5a5',
+    'discover': '#fdba74',
+    'bofa': '#93c5fd',
+    'usbank': '#93c5fd',
+    'rakuten': '#fca5a5',
+    'capital-one-shopping': '#fca5a5',
+    'topcashback': '#6ee7b7'
+  };
+  return colors[source] || '#f8fafc';
+}
+
 // Create banner HTML
 function createBannerHTML(cardOffer, stackingOffer) {
   const sourceName = getSourceDisplayName(cardOffer?.source);
-  const cardName = getCardName(cardOffer?.source);
+  const sourceColor = getSourceColor(cardOffer?.source);
 
   let mainMessage = '';
   if (cardOffer) {
-    mainMessage = `Use your <strong>${sourceName}</strong> card for <strong>${cardOffer.value}</strong>`;
+    mainMessage = `Use your <strong style="color:${sourceColor}">${sourceName}</strong> card for <strong style="color:#34d399">${cardOffer.value}</strong>`;
   }
 
   let stackingMessage = '';
   if (stackingOffer) {
     const stackingName = getSourceDisplayName(stackingOffer.source);
-    stackingMessage = `<div class="rmx-stacking">💡 Stack with ${stackingName} for ${stackingOffer.value} extra cashback</div>`;
+    const stackingColor = getSourceColor(stackingOffer.source);
+    stackingMessage = `<div class="rmx-stacking">Stack with <span style="color:${stackingColor}">${stackingName}</span> for <span style="color:#34d399">${stackingOffer.value}</span> extra cashback</div>`;
     if (stackingOffer.source === 'rakuten') {
       stackingMessage += `<div class="rmx-referral">Don't have Rakuten? <a href="${RAKUTEN_REFERRAL_URL}" target="_blank" rel="noopener">Sign up free →</a><br><span class="rmx-referral-disc">${REFERRAL_DISCLOSURE}</span></div>`;
     }
@@ -158,7 +195,7 @@ function createBannerHTML(cardOffer, stackingOffer) {
       </div>
       <div class="rmx-banner-actions">
         <button id="rmx-banner-details" class="rmx-banner-btn rmx-banner-btn-primary">Details</button>
-        <button id="rmx-banner-close" class="rmx-banner-btn rmx-banner-btn-close">×</button>
+        <button id="rmx-banner-close" class="rmx-banner-btn rmx-banner-btn-close">&times;</button>
       </div>
     </div>
   `;
@@ -203,7 +240,7 @@ function dismissBanner() {
       bannerElement.remove();
       bannerElement = null;
     }, 300);
-    isDismissed = true;
+    dismissSite();
   }
 }
 
@@ -239,19 +276,27 @@ function injectStyles() {
       position: fixed;
       top: 20px;
       right: 20px;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white;
-      padding: 16px 20px;
-      border-radius: 12px;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2), 0 2px 8px rgba(0, 0, 0, 0.1);
+      background: rgba(15, 23, 42, 0.92);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      color: #f8fafc;
+      padding: 14px 18px;
+      border-radius: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
       z-index: 2147483647;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
       font-size: 14px;
-      max-width: 400px;
+      max-width: 420px;
       opacity: 0;
-      transform: translateX(420px);
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      backdrop-filter: blur(10px);
+      transform: translateX(440px);
+      transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    @supports not (backdrop-filter: blur(20px)) {
+      #rmx-merchant-banner {
+        background: rgba(15, 23, 42, 0.97);
+      }
     }
 
     #rmx-merchant-banner.rmx-visible {
@@ -261,14 +306,21 @@ function injectStyles() {
 
     .rmx-banner-content {
       display: flex;
-      align-items: flex-start;
+      align-items: center;
       gap: 12px;
     }
 
     .rmx-banner-icon {
-      font-size: 24px;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #6366f1, #8b5cf6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
       flex-shrink: 0;
-      margin-top: 2px;
+      line-height: 1;
     }
 
     .rmx-banner-text {
@@ -277,91 +329,97 @@ function injectStyles() {
     }
 
     .rmx-banner-title {
-      font-size: 15px;
+      font-size: 14px;
+      font-weight: 500;
       line-height: 1.4;
-      margin-bottom: 4px;
+      color: #f8fafc;
     }
 
     .rmx-banner-title strong {
       font-weight: 600;
-      color: #fbbf24;
     }
 
     .rmx-stacking {
-      font-size: 13px;
-      opacity: 0.9;
-      margin-top: 4px;
-      padding-left: 12px;
-      border-left: 2px solid rgba(255, 255, 255, 0.3);
+      font-size: 12px;
+      color: rgba(255, 255, 255, 0.4);
+      margin-top: 3px;
+      line-height: 1.4;
+    }
+
+    .rmx-stacking span {
+      font-weight: 500;
     }
 
     .rmx-referral {
-      font-size: 12px;
-      opacity: 0.85;
-      margin-top: 6px;
-      padding-left: 12px;
-      border-left: 2px solid rgba(255, 255, 255, 0.3);
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.4);
+      margin-top: 4px;
     }
 
     .rmx-referral a {
-      color: #fbbf24;
+      color: #8b5cf6;
       text-decoration: underline;
+      text-decoration-color: rgba(139, 92, 246, 0.4);
+    }
+
+    .rmx-referral a:hover {
+      color: #a78bfa;
     }
 
     .rmx-referral-disc {
       font-size: 10px;
-      opacity: 0.7;
+      opacity: 0.6;
     }
 
     .rmx-banner-actions {
       display: flex;
       gap: 8px;
-      align-items: flex-start;
+      align-items: center;
       flex-shrink: 0;
     }
 
     .rmx-banner-btn {
       border: none;
       cursor: pointer;
-      font-size: 13px;
+      font-size: 12px;
       font-weight: 500;
-      padding: 6px 12px;
-      border-radius: 6px;
+      padding: 6px 14px;
+      border-radius: 8px;
       transition: all 0.2s ease;
       font-family: inherit;
     }
 
     .rmx-banner-btn-primary {
-      background: rgba(255, 255, 255, 0.2);
-      color: white;
-      backdrop-filter: blur(10px);
+      background: linear-gradient(135deg, #6366f1, #8b5cf6);
+      color: #f8fafc;
     }
 
     .rmx-banner-btn-primary:hover {
-      background: rgba(255, 255, 255, 0.3);
+      opacity: 0.9;
       transform: translateY(-1px);
     }
 
     .rmx-banner-btn-primary:disabled {
-      opacity: 0.6;
+      opacity: 0.5;
       cursor: not-allowed;
     }
 
     .rmx-banner-btn-close {
-      background: rgba(255, 255, 255, 0.15);
-      color: white;
+      background: rgba(255, 255, 255, 0.1);
+      color: #f8fafc;
       width: 28px;
       height: 28px;
       padding: 0;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 20px;
+      font-size: 18px;
       line-height: 1;
+      border-radius: 50%;
     }
 
     .rmx-banner-btn-close:hover {
-      background: rgba(255, 255, 255, 0.25);
+      background: rgba(255, 255, 255, 0.18);
     }
 
     /* Tooltip */
@@ -369,13 +427,14 @@ function injectStyles() {
       position: absolute;
       bottom: -50px;
       right: 0;
-      background: #1f2937;
-      color: white;
+      background: rgba(15, 23, 42, 0.95);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: #f8fafc;
       padding: 10px 14px;
-      border-radius: 8px;
-      font-size: 13px;
+      border-radius: 10px;
+      font-size: 12px;
       white-space: nowrap;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
       animation: rmx-tooltip-slide-in 0.3s ease;
       z-index: 10;
     }
@@ -389,7 +448,7 @@ function injectStyles() {
       height: 0;
       border-left: 6px solid transparent;
       border-right: 6px solid transparent;
-      border-bottom: 6px solid #1f2937;
+      border-bottom: 6px solid rgba(15, 23, 42, 0.95);
     }
 
     @keyframes rmx-tooltip-slide-in {
@@ -410,10 +469,10 @@ function injectStyles() {
 
     @keyframes rmx-pulse {
       0%, 100% {
-        box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.7);
+        box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.5);
       }
       50% {
-        box-shadow: 0 0 0 8px rgba(255, 255, 255, 0);
+        box-shadow: 0 0 0 8px rgba(99, 102, 241, 0);
       }
     }
 
@@ -432,12 +491,13 @@ function injectStyles() {
       }
 
       .rmx-banner-content {
-        flex-direction: column;
-        gap: 8px;
+        flex-wrap: wrap;
+        gap: 10px;
       }
 
       .rmx-banner-actions {
         width: 100%;
+        justify-content: flex-end;
       }
 
       .rmx-banner-btn-primary {
@@ -478,9 +538,10 @@ new MutationObserver(() => {
   const currentUrl = location.href;
   if (currentUrl !== lastUrl) {
     lastUrl = currentUrl;
-    isDismissed = false;
+    // Remove old banner element but don't clear dismiss — stays dismissed for this site's session
     if (bannerElement) {
-      dismissBanner();
+      bannerElement.remove();
+      bannerElement = null;
     }
     setTimeout(() => {
       init();

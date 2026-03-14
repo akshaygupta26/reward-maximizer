@@ -24,6 +24,8 @@ Reward Maximizer/
 ├── service-worker.js                   # Badge updates, offer storage, merchant detection
 ├── content/
 │   ├── content-main.js                # Hybrid extraction orchestrator (interceptor + scraper)
+│   ├── chase-api-interceptor.js       # MAIN world script: fetch/XHR capture + replay for Chase API discovery
+│   ├── batch-optin.js                 # Fast sequential offer activation with MutationObserver + progress reporting
 │   ├── merchant-banner.js             # Offer alerts on merchant websites
 │   ├── utils.js
 │   ├── interceptors/                  # Network API observation layer
@@ -48,7 +50,9 @@ Reward Maximizer/
 │   └── interceptor-health.js          # Per-portal health tracking (success/failure counts)
 ├── data/defaults.js                   # Default point values
 ├── data/referral.js                   # Rakuten referral URL, BMAC URL, disclosure text
-├── onboarding/                        # First-run welcome page
+├── shared/
+│   └── theme.css                      # Design tokens (CSS custom properties), dark premium theme
+├── onboarding/                        # First-run 5-step wizard (welcome.html, onboarding.css, onboarding.js)
 ├── legal/                             # Privacy policy, terms of service
 └── icons/                             # Extension icons + promo images
 ```
@@ -109,6 +113,9 @@ Default in `data/defaults.js`: amex-mr: 1.8, chase-ur: 1.5, citi-typ: 1.4, capit
 **Flow:** Page loads → interceptor injects main-world script at `document_start` → script wraps `fetch`/`XMLHttpRequest` → API responses matching URL patterns are cloned and bridged via `window.postMessage` → content script parses offers → if no data within timeout, falls back to DOM scraper.
 
 **Key config:** `ExtractorConfig.portals[name].interceptor` (enable/disable), `ExtractorConfig.interceptorTimeoutMs` (default 8000ms), `ExtractorConfig.portals[name].fallbackToScraper` (default true).
+
+### Chase Self-Discovering API Activation
+Chase scraper uses a separate MAIN world script (`content/chase-api-interceptor.js`, registered via manifest `"world": "MAIN"`) for self-discovering activation. Flow: ping interceptor → start capture → click ONE offer → capture POST/PUT requests → analyze for activation API (URL, headers, body template, offer ID field) → stop capture → navigate back → replay template for all remaining offers in batches of 5 via `window.postMessage`. Falls back to optimized `history.back()` click-and-navigate if discovery fails. Communication channel: `rmx-chase-api`.
 
 ### Scraper Pattern (Fallback)
 Each scraper implements: `source`, `offersUrl`, `needsNavigation()`, `scrape()`, `collectOffers()`, `extractMerchant()`, `extractValue()`. All `scrape()` methods wrapped in try-catch returning `{ offers: [], added: 0, totalFound: 0 }` on failure.
@@ -182,17 +189,32 @@ Each scraper implements: `source`, `offersUrl`, `needsNavigation()`, `scrape()`,
 
 ---
 
-**Last Updated:** 2026-02-18
+**Last Updated:** 2026-03-12
 
 ### TODO (Next Session)
+- **Live Chase API discovery testing** — Log into Chase, trigger sync, watch console for `[RMX-Chase]` Phase 1/2/3 logs. Verify: interceptor ready → discovery captures activation API → replay activates remaining offers. If discovery fails, confirm fallback click-and-navigate works at ~1s/offer.
+- **Live batch opt-in testing** — Test BatchOptIn on actual Amex portal (requires login). Verify MutationObserver timing, progress reporting, and in-place clicking.
 - **Live scraping tests** — Test scrapers on actual bank portals (requires login). Amex, Chase, Citi, BofA, etc.
 - **Banner dismiss persistence** — Dismiss state uses in-memory flag, resets on page reload and SPA navigation (known issues 6.3, 6.5)
-- **Live API endpoint discovery** — Interceptors use heuristic URL patterns and field names. Log into each portal with `ExtractorConfig.logRawResponses = true` to discover actual API shapes, then refine `urlPatterns` and `_parse*Offer()` field mappings per portal.
+- **Live API endpoint discovery (other portals)** — Interceptors use heuristic URL patterns and field names. Log into each portal with `ExtractorConfig.logRawResponses = true` to discover actual API shapes.
 - **Amex multi-card activation** — `AmexInterceptor.activateAll()` is a skeleton. Implement once activation endpoint is discovered.
 - **Chase post-opt-in auto-populate** — After opt-in completes, offers should auto-save without requiring a second manual sync.
-- **CSP inline script warnings** — 2 runtime errors on extension pages about inline script CSP violations (non-blocking but worth investigating)
 
 ### Recent Updates
+- **Chase self-discovering API interception (2026-03-12):** New 3-phase activation for Chase offers:
+  - **Phase 1 — API Discovery:** Created `content/chase-api-interceptor.js` (MAIN world via manifest `"world": "MAIN"`) that patches fetch/XHR to capture outgoing POST/PUT/PATCH requests. Chase scraper clicks ONE offer, captures the activation API call, extracts offer ID field and request template.
+  - **Phase 2 — API Replay:** Replays captured template for all remaining offers in batches of 5 via postMessage to MAIN world. Expected: ~5-10s for 70 offers vs 3-5 min before.
+  - **Phase 3 — Fallback:** If discovery fails, uses optimized click-and-navigate with `history.back()` (~1s/offer) instead of full URL reload.
+  - Updated `manifest.json` with separate MAIN world content_scripts entry for Chase.
+  - Updated `popup.js` to handle new progress phases: `discovering`, `activating`, `fallback`.
+  - Existing `ChaseInterceptor` (response observation) and `BatchOptIn` remain for other portals. All 350 tests pass (no new failures).
+- **Batch opt-in engine + Chase API activation (2026-03-12):** Created `content/batch-optin.js` — shared fast sequential activation for Amex & Chase DOM scraper fallback. Uses MutationObserver-based DOM stabilization (resolves in ~150-300ms vs old 1000ms fixed waits). Reports real-time progress to popup via `chrome.runtime.sendMessage`. Chase primary path now uses API activation: interceptor captures `digitalInteractionDestUrlText` from Chase API, `activateAll()` fires Image beacon GETs to `reco.chase.com` click-tracking in batches of 10 with progress reporting. Bypass/TODO removed — activation now live. Chase `clickAndReturn()` removed entirely. Popup shows live progress ("Chase: 12/47 activated (25%) — Aldo"). All 177 tests pass (including 4 previously-failing `activateAll` tests).
+- **Dark premium UI redesign (2026-03-12):** Complete visual overhaul across all 4 surfaces — dark glassmorphism theme with `shared/theme.css` design tokens (`--rmx-*` CSS custom properties).
+  - **Phase 0 — Shared theme:** Created `shared/theme.css` with all design tokens (backgrounds, glass surfaces, accents, brand colors, radii, shadows, typography, transitions). Updated `manifest.json` web_accessible_resources.
+  - **Phase 1 — Onboarding wizard:** Rewrote from single-scroll page to 5-step wizard (Welcome → How It Works → Select Cards → Privacy → All Set). New `onboarding.css`, full wizard state machine in `onboarding.js` with slide transitions, step validation, keyboard nav. Moved inline script to JS (CSP fix). Added `rmx_banner_enabled`, `rmx_auto_sync` storage keys.
+  - **Phase 2 — Popup dashboard:** Complete `popup.css` rewrite. Glass merchant cards, translucent brand-colored sync buttons/source badges, emerald values, indigo filter chips. Fixed 5 inline style assignments in `popup.js`. Added missing `.capital-one-shopping`/`.topcashback` badge styles + `.export-menu`, `.card-view-header`, `.card-view-merchant`, `.overflow-text` CSS classes.
+  - **Phase 3 — Settings page:** Complete `settings.css` rewrite. Glass section cards, indigo-tinted portal checkboxes, accent gradient toggles/buttons. Moved BMAC card and valuation header inline styles to CSS classes.
+  - **Phase 4 — Merchant banner:** Rewrote `injectStyles()` to dark glass pill (`rgba(15,23,42,0.92)`, `backdrop-filter: blur(20px)`, 16px radius). Added `getSourceColor()` for brand-colored source names, `@supports not (backdrop-filter)` fallback. 40x40 gradient icon, 28x28 glass close button.
 - **Automated integration testing (2026-02-18):**
   - 56/56 automated tests passed via Chrome DevTools Protocol
   - Sections tested: Onboarding, Popup UI, Settings, Deduplication, Sync Navigation, Import/Export, Export, Edge Cases, Production Readiness

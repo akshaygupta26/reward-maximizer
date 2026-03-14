@@ -1,29 +1,31 @@
-/* Reward Maximizer Popup Styles */
+/* ============================================
+   Reward Maximizer — Popup Dark Theme
+   popup/popup.css
+   Depends on ../shared/theme.css for design tokens
+   ============================================ */
 
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
-
+/* --- Body --- */
 body {
   width: 400px;
   height: 550px;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  font-size: 13px;
-  background-color: #f8fafc;
-  color: #1e293b;
+  font-family: var(--rmx-font-family);
+  font-size: var(--rmx-font-base);
+  background: var(--rmx-bg-gradient);
+  color: var(--rmx-text-primary);
   overflow: hidden;
   display: flex;
   flex-direction: column;
 }
 
-/* Header */
+/* ============================================
+   Header
+   ============================================ */
 .header {
-  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-  color: white;
+  background: var(--rmx-bg-primary);
+  color: var(--rmx-text-primary);
   padding: 14px 16px;
   flex-shrink: 0;
+  border-bottom: 1px solid var(--rmx-glass-border);
 }
 
 .header-title {
@@ -39,6 +41,7 @@ body {
   display: flex;
   align-items: center;
   gap: 8px;
+  color: var(--rmx-text-primary);
 }
 
 .header-actions {
@@ -47,24 +50,26 @@ body {
 }
 
 .icon-btn {
-  background: rgba(255,255,255,0.15);
-  border: none;
-  color: white;
+  background: var(--rmx-glass-bg);
+  border: 1px solid var(--rmx-glass-border);
+  color: var(--rmx-text-primary);
   width: 28px;
   height: 28px;
-  border-radius: 6px;
+  border-radius: var(--rmx-radius-sm);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.2s;
+  transition: background var(--rmx-transition-base);
 }
 
 .icon-btn:hover {
-  background: rgba(255,255,255,0.25);
+  background: var(--rmx-glass-hover);
 }
 
-/* Sync Buttons */
+/* ============================================
+   Sync Buttons
+   ============================================ */
 .sync-bar {
   display: flex;
   gap: 6px;
@@ -73,27 +78,29 @@ body {
 
 .sync-btn {
   padding: 6px 10px;
-  font-size: 11px;
+  font-size: var(--rmx-font-xs);
   font-weight: 500;
   border: none;
-  border-radius: 6px;
+  border-radius: var(--rmx-radius-sm);
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all var(--rmx-transition-base);
   display: flex;
   align-items: center;
   gap: 4px;
 }
 
-.sync-btn.amex { background: #006FCF; color: white; }
-.sync-btn.chase { background: #117ACA; color: white; }
-.sync-btn.citi { background: #003B70; color: white; }
-.sync-btn.capital-one { background: #D03027; color: white; }
-.sync-btn.discover { background: #FF6600; color: white; }
-.sync-btn.bofa { background: #012169; color: white; }
-.sync-btn.usbank { background: #0C2340; color: white; }
-.sync-btn.rakuten { background: #BF0000; color: white; }
+.sync-btn.amex { background: var(--rmx-brand-amex-bg); color: var(--rmx-brand-amex-text); }
+.sync-btn.chase { background: var(--rmx-brand-chase-bg); color: var(--rmx-brand-chase-text); }
+.sync-btn.citi { background: var(--rmx-brand-citi-bg); color: var(--rmx-brand-citi-text); }
+.sync-btn.capital-one { background: var(--rmx-brand-capital-one-bg); color: var(--rmx-brand-capital-one-text); }
+.sync-btn.discover { background: var(--rmx-brand-discover-bg); color: var(--rmx-brand-discover-text); }
+.sync-btn.bofa { background: var(--rmx-brand-bofa-bg); color: var(--rmx-brand-bofa-text); }
+.sync-btn.usbank { background: var(--rmx-brand-usbank-bg); color: var(--rmx-brand-usbank-text); }
+.sync-btn.rakuten { background: var(--rmx-brand-rakuten-bg); color: var(--rmx-brand-rakuten-text); }
+.sync-btn.capital-one-shopping { background: var(--rmx-brand-capital-one-shopping-bg); color: var(--rmx-brand-capital-one-shopping-text); }
+
 .sync-btn.sync-all {
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  background: var(--rmx-success-gradient);
   color: white;
   font-weight: 600;
   flex: 1 0 100%;
@@ -101,14 +108,15 @@ body {
 }
 
 .sync-btn:hover {
-  filter: brightness(1.1);
+  filter: brightness(1.2);
   transform: translateY(-1px);
 }
 
 .sync-btn:disabled {
-  opacity: 0.6;
+  opacity: 0.4;
   cursor: not-allowed;
   transform: none;
+  filter: none;
 }
 
 .sync-btn.active {
@@ -120,39 +128,47 @@ body {
   50% { opacity: 0.7; }
 }
 
-/* Search and Filter Bar */
+/* ============================================
+   Search & Filter Bar
+   ============================================ */
 .search-filter {
   padding: 10px 16px;
-  background: white;
-  border-bottom: 1px solid #e2e8f0;
+  background: var(--rmx-bg-secondary);
+  border-bottom: 1px solid var(--rmx-glass-border);
   flex-shrink: 0;
 }
 
 .search-box {
   display: flex;
   align-items: center;
-  background: #f1f5f9;
-  border-radius: 8px;
+  background: var(--rmx-glass-bg);
+  border: 1px solid var(--rmx-glass-border);
+  border-radius: var(--rmx-radius-sm);
   padding: 7px 12px;
   margin-bottom: 8px;
-  transition: background 0.2s;
+  transition: all var(--rmx-transition-base);
 }
 
 .search-box:focus-within {
-  background: #e2e8f0;
+  background: var(--rmx-glass-hover);
+  border-color: var(--rmx-accent-border);
+}
+
+.search-box svg {
+  stroke: var(--rmx-text-secondary);
 }
 
 .search-box input {
   flex: 1;
   border: none;
   background: transparent;
-  font-size: 13px;
+  font-size: var(--rmx-font-base);
   outline: none;
-  color: #1e293b;
+  color: var(--rmx-text-primary);
 }
 
 .search-box input::placeholder {
-  color: #94a3b8;
+  color: var(--rmx-text-secondary);
 }
 
 .filter-chips {
@@ -167,39 +183,44 @@ body {
 }
 
 .filter-chips::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: rgba(255, 255, 255, 0.15);
   border-radius: 2px;
 }
 
 .filter-chip {
   padding: 4px 10px;
-  font-size: 11px;
-  border: 1px solid #e2e8f0;
-  border-radius: 16px;
-  background: white;
-  color: #64748b;
+  font-size: var(--rmx-font-xs);
+  border: 1px solid var(--rmx-glass-border);
+  border-radius: var(--rmx-radius-full);
+  background: var(--rmx-glass-bg);
+  color: var(--rmx-text-secondary);
   cursor: pointer;
   white-space: nowrap;
-  transition: all 0.2s;
+  transition: all var(--rmx-transition-base);
 }
 
 .filter-chip:hover {
-  border-color: #2563eb;
-  color: #2563eb;
+  border-color: var(--rmx-accent-border);
+  color: var(--rmx-accent-primary);
+  background: var(--rmx-accent-bg);
 }
 
 .filter-chip.active {
-  background: #2563eb;
-  border-color: #2563eb;
-  color: white;
+  background: var(--rmx-accent-bg);
+  border-color: var(--rmx-accent-border);
+  color: var(--rmx-accent-primary);
+  font-weight: 600;
 }
 
-/* Status Bar */
+/* ============================================
+   Status Bar
+   ============================================ */
 .status-bar {
   padding: 8px 16px;
-  background: #f1f5f9;
-  font-size: 12px;
-  color: #64748b;
+  background: var(--rmx-glass-bg);
+  border-bottom: 1px solid var(--rmx-glass-border);
+  font-size: var(--rmx-font-sm);
+  color: var(--rmx-text-secondary);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -207,331 +228,29 @@ body {
 }
 
 .status-bar.success {
-  background: #dcfce7;
-  color: #166534;
+  background: var(--rmx-success-bg);
+  color: var(--rmx-success);
 }
 
 .status-bar.error {
-  background: #fee2e2;
-  color: #991b1b;
+  background: var(--rmx-error-bg);
+  color: var(--rmx-error);
 }
 
-/* Offers List */
+/* ============================================
+   Offers Container
+   ============================================ */
 .offers-container {
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
   padding: 12px 16px 16px;
-  background: #f8fafc;
+  background: transparent;
   scroll-behavior: smooth;
   position: relative;
 }
 
-/* Scroll fade indicators */
-.offers-container::before {
-  content: '';
-  position: sticky;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 20px;
-  background: linear-gradient(to bottom, #f8fafc 0%, transparent 100%);
-  pointer-events: none;
-  z-index: 1;
-}
-
-.offers-container::after {
-  content: '';
-  position: sticky;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 20px;
-  background: linear-gradient(to top, #f8fafc 0%, transparent 100%);
-  pointer-events: none;
-  z-index: 1;
-  margin-top: -20px;
-}
-
-.empty-state {
-  text-align: center;
-  padding: 60px 20px;
-  color: #94a3b8;
-}
-
-.empty-state-icon {
-  font-size: 56px;
-  margin-bottom: 16px;
-  opacity: 0.5;
-}
-
-.empty-state h3 {
-  font-size: 15px;
-  font-weight: 600;
-  color: #475569;
-  margin-bottom: 8px;
-}
-
-.empty-state p {
-  font-size: 13px;
-  line-height: 1.5;
-  color: #94a3b8;
-}
-
-/* Merchant Card */
-.merchant-card {
-  background: white;
-  border-radius: 8px;
-  margin-bottom: 10px;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.06);
-  overflow: hidden;
-  border: 1px solid #e2e8f0;
-  transition: box-shadow 0.2s, transform 0.2s;
-}
-
-.merchant-card:hover {
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-  transform: translateY(-1px);
-}
-
-.merchant-header {
-  padding: 10px 12px;
-  border-bottom: 1px solid #f1f5f9;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.merchant-name {
-  font-weight: 600;
-  font-size: 14px;
-  color: #1e293b;
-}
-
-.merchant-category {
-  font-size: 10px;
-  padding: 2px 8px;
-  background: #f1f5f9;
-  border-radius: 10px;
-  color: #64748b;
-}
-
-.merchant-offers {
-  padding: 6px 12px;
-}
-
-.offer-row {
-  display: flex;
-  align-items: center;
-  padding: 7px 0;
-  border-bottom: 1px solid #f8fafc;
-}
-
-.offer-row:last-child {
-  border-bottom: none;
-}
-
-.offer-source {
-  font-size: 10px;
-  padding: 2px 6px;
-  border-radius: 4px;
-  font-weight: 500;
-  min-width: 50px;
-  text-align: center;
-}
-
-.offer-source.amex { background: #dbeafe; color: #1d4ed8; }
-.offer-source.chase { background: #dcfce7; color: #166534; }
-.offer-source.citi { background: #e0e7ff; color: #4338ca; }
-.offer-source.capital-one { background: #fee2e2; color: #991b1b; }
-.offer-source.discover { background: #ffedd5; color: #c2410c; }
-.offer-source.bofa { background: #dbeafe; color: #1e40af; }
-.offer-source.usbank { background: #f3f4f6; color: #374151; }
-.offer-source.rakuten { background: #fce7f3; color: #be185d; }
-
-.offer-value {
-  flex: 1;
-  margin-left: 10px;
-  font-weight: 500;
-  color: #059669;
-}
-
-.offer-cpp {
-  font-size: 11px;
-  color: #64748b;
-  margin-left: 8px;
-}
-
-.best-badge {
-  font-size: 9px;
-  background: #fef3c7;
-  color: #b45309;
-  padding: 2px 6px;
-  border-radius: 4px;
-  font-weight: 600;
-  margin-left: 8px;
-}
-
-.stacking-badge {
-  font-size: 9px;
-  background: #dcfce7;
-  color: #166534;
-  padding: 2px 6px;
-  border-radius: 4px;
-  margin-left: 8px;
-}
-
-.merchant-footer {
-  padding: 6px 12px;
-  background: #f8fafc;
-  display: flex;
-  justify-content: space-between;
-  font-size: 10px;
-  color: #64748b;
-}
-
-.stacking-tip {
-  padding: 6px 12px;
-  background: linear-gradient(135deg, #dcfce7 0%, #d1fae5 100%);
-  font-size: 10px;
-  color: #166534;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-weight: 500;
-  flex-wrap: wrap;
-}
-
-.stacking-referral {
-  color: #059669;
-  text-decoration: underline;
-  font-size: 10px;
-}
-
-.referral-disc {
-  font-size: 9px;
-  color: #94a3b8;
-  font-weight: 400;
-}
-
-.empty-state-tip {
-  font-size: 11px;
-  color: #64748b;
-  margin-top: 8px;
-  line-height: 1.5;
-}
-
-.empty-state-tip a {
-  color: #2563eb;
-  text-decoration: underline;
-}
-
-#supportBtn {
-  text-decoration: none;
-  color: #e11d48;
-  font-size: 12px;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-/* Footer */
-.footer {
-  padding: 10px 16px;
-  background: white;
-  border-top: 1px solid #e2e8f0;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-shrink: 0;
-}
-
-.footer-btn {
-  padding: 8px 16px;
-  font-size: 12px;
-  font-weight: 500;
-  border: 1px solid #e2e8f0;
-  border-radius: 6px;
-  background: white;
-  color: #64748b;
-  cursor: pointer;
-  transition: all 0.2s;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.footer-btn:hover {
-  background: #f8fafc;
-  border-color: #cbd5e1;
-}
-
-.footer-btn.primary {
-  background: #2563eb;
-  border-color: #2563eb;
-  color: white;
-}
-
-.footer-btn.primary:hover {
-  background: #1d4ed8;
-}
-
-/* View Toggle */
-.view-toggle {
-  display: flex;
-  border: 1px solid #e2e8f0;
-  border-radius: 6px;
-  overflow: hidden;
-}
-
-.view-toggle button {
-  padding: 6px 12px;
-  border: none;
-  background: white;
-  font-size: 11px;
-  cursor: pointer;
-  color: #64748b;
-}
-
-.view-toggle button.active {
-  background: #2563eb;
-  color: white;
-}
-
-.view-toggle button:not(:last-child) {
-  border-right: 1px solid #e2e8f0;
-}
-
-/* Animations */
-.fade-in {
-  animation: fadeIn 0.3s ease-out;
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-/* Loading spinner */
-.loading {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 40px;
-}
-
-.spinner {
-  width: 32px;
-  height: 32px;
-  border: 3px solid #e2e8f0;
-  border-top-color: #2563eb;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
+/* Scroll fade indicators removed — caused visual artifacts in popup context */
 
 /* Scrollbar */
 .offers-container::-webkit-scrollbar {
@@ -543,10 +262,428 @@ body {
 }
 
 .offers-container::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: rgba(255, 255, 255, 0.15);
   border-radius: 10px;
 }
 
 .offers-container::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: rgba(255, 255, 255, 0.25);
+}
+
+/* ============================================
+   Empty State
+   ============================================ */
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--rmx-text-secondary);
+}
+
+.empty-state-icon {
+  font-size: 56px;
+  margin-bottom: 16px;
+  opacity: 0.5;
+}
+
+.empty-state h3 {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--rmx-text-primary);
+  margin-bottom: 8px;
+}
+
+.empty-state p {
+  font-size: var(--rmx-font-base);
+  line-height: 1.5;
+  color: var(--rmx-text-secondary);
+}
+
+.empty-state-tip {
+  font-size: var(--rmx-font-xs);
+  color: var(--rmx-text-secondary);
+  margin-top: 8px;
+  line-height: 1.5;
+}
+
+.empty-state-tip a {
+  color: var(--rmx-accent-primary);
+  text-decoration: underline;
+}
+
+.empty-state-tip a:hover {
+  color: var(--rmx-accent-secondary);
+}
+
+/* ============================================
+   Merchant Card (Glass Panel)
+   ============================================ */
+.merchant-card {
+  background: var(--rmx-bg-secondary);
+  border: 1px solid var(--rmx-glass-border);
+  border-radius: var(--rmx-radius-lg);
+  margin-bottom: 10px;
+  box-shadow: var(--rmx-shadow-sm);
+  overflow: hidden;
+  transition: box-shadow var(--rmx-transition-base), transform var(--rmx-transition-base);
+}
+
+.merchant-card:hover {
+  box-shadow: var(--rmx-shadow-md);
+  transform: translateY(-1px);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+.merchant-header {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--rmx-glass-border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.merchant-name {
+  font-weight: 600;
+  font-size: var(--rmx-font-md);
+  color: var(--rmx-text-primary);
+}
+
+.merchant-category {
+  font-size: 10px;
+  padding: 2px 8px;
+  background: var(--rmx-glass-bg);
+  border: 1px solid var(--rmx-glass-border);
+  border-radius: 10px;
+  color: var(--rmx-text-secondary);
+}
+
+.merchant-offers {
+  padding: 6px 12px;
+}
+
+/* ============================================
+   Offer Row
+   ============================================ */
+.offer-row {
+  display: flex;
+  align-items: center;
+  padding: 7px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.offer-row:last-child {
+  border-bottom: none;
+}
+
+/* ============================================
+   Source Badges (translucent brand colors)
+   ============================================ */
+.offer-source {
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 500;
+  min-width: 50px;
+  text-align: center;
+}
+
+.offer-source.amex { background: var(--rmx-brand-amex-bg); color: var(--rmx-brand-amex-text); }
+.offer-source.chase { background: var(--rmx-brand-chase-bg); color: var(--rmx-brand-chase-text); }
+.offer-source.citi { background: var(--rmx-brand-citi-bg); color: var(--rmx-brand-citi-text); }
+.offer-source.capital-one { background: var(--rmx-brand-capital-one-bg); color: var(--rmx-brand-capital-one-text); }
+.offer-source.discover { background: var(--rmx-brand-discover-bg); color: var(--rmx-brand-discover-text); }
+.offer-source.bofa { background: var(--rmx-brand-bofa-bg); color: var(--rmx-brand-bofa-text); }
+.offer-source.usbank { background: var(--rmx-brand-usbank-bg); color: var(--rmx-brand-usbank-text); }
+.offer-source.rakuten { background: var(--rmx-brand-rakuten-bg); color: var(--rmx-brand-rakuten-text); }
+.offer-source.capital-one-shopping { background: var(--rmx-brand-capital-one-shopping-bg); color: var(--rmx-brand-capital-one-shopping-text); }
+.offer-source.topcashback { background: var(--rmx-brand-topcashback-bg); color: var(--rmx-brand-topcashback-text); }
+
+/* ============================================
+   Offer Value & Badges
+   ============================================ */
+.offer-value {
+  flex: 1;
+  margin-left: 10px;
+  font-weight: 500;
+  color: var(--rmx-money);
+}
+
+.offer-cpp {
+  font-size: var(--rmx-font-xs);
+  color: var(--rmx-text-secondary);
+  margin-left: 8px;
+}
+
+.best-badge {
+  font-size: 9px;
+  background: var(--rmx-warning-bg);
+  color: var(--rmx-warning);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 600;
+  margin-left: 8px;
+  border: 1px solid var(--rmx-warning-border);
+}
+
+.stacking-badge {
+  font-size: 9px;
+  background: var(--rmx-success-bg);
+  color: var(--rmx-success);
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin-left: 8px;
+  border: 1px solid var(--rmx-success-border);
+}
+
+.expiry-badge {
+  font-size: 9px;
+  background: var(--rmx-glass-bg);
+  color: var(--rmx-text-secondary);
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin-left: 8px;
+}
+
+.cpp-badge {
+  font-size: 9px;
+  background: var(--rmx-accent-bg);
+  color: var(--rmx-accent-primary);
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin-left: 8px;
+}
+
+/* ============================================
+   Merchant Footer & Stacking Tip
+   ============================================ */
+.merchant-footer {
+  padding: 6px 12px;
+  background: rgba(255, 255, 255, 0.02);
+  border-top: 1px solid var(--rmx-glass-border);
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  color: var(--rmx-text-secondary);
+}
+
+.stacking-tip {
+  padding: 6px 12px;
+  background: var(--rmx-success-bg);
+  border-left: 3px solid var(--rmx-success);
+  font-size: 10px;
+  color: var(--rmx-success);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 500;
+  flex-wrap: wrap;
+}
+
+.stacking-tip svg {
+  stroke: var(--rmx-success);
+}
+
+.stacking-referral {
+  color: var(--rmx-money);
+  text-decoration: underline;
+  font-size: 10px;
+}
+
+.stacking-referral:hover {
+  color: var(--rmx-success);
+}
+
+.referral-disc {
+  font-size: 9px;
+  color: var(--rmx-text-tertiary);
+  font-weight: 400;
+}
+
+/* ============================================
+   Card-View Header & Merchant Name (JS classes)
+   ============================================ */
+.card-view-header {
+  background: var(--rmx-glass-active);
+}
+
+.card-view-merchant {
+  flex: 1;
+  margin-left: 10px;
+  font-size: var(--rmx-font-sm);
+  color: var(--rmx-text-primary);
+  font-weight: 500;
+}
+
+/* ============================================
+   Overflow Text (for "+N more" items)
+   ============================================ */
+.overflow-text {
+  justify-content: center;
+  color: var(--rmx-text-secondary);
+}
+
+/* ============================================
+   Export Menu (JS-created dropdown)
+   ============================================ */
+.export-menu {
+  position: fixed;
+  bottom: 50px;
+  right: 10px;
+  background: var(--rmx-bg-secondary);
+  border: 1px solid var(--rmx-glass-border);
+  border-radius: var(--rmx-radius-sm);
+  box-shadow: var(--rmx-shadow-lg);
+  padding: 8px 0;
+  z-index: 1000;
+}
+
+.export-menu button {
+  display: block;
+  width: 100%;
+  padding: 8px 16px;
+  border: none;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+  font-size: var(--rmx-font-base);
+  color: var(--rmx-text-primary);
+  transition: background var(--rmx-transition-fast);
+}
+
+.export-menu button:hover {
+  background: var(--rmx-glass-hover);
+}
+
+/* ============================================
+   Support Button
+   ============================================ */
+#supportBtn {
+  text-decoration: none;
+  color: var(--rmx-error);
+  font-size: var(--rmx-font-sm);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transition: color var(--rmx-transition-base);
+}
+
+#supportBtn:hover {
+  color: var(--rmx-brand-rakuten-text);
+}
+
+/* ============================================
+   Footer
+   ============================================ */
+.footer {
+  padding: 8px 10px;
+  background: var(--rmx-bg-primary);
+  border-top: 1px solid var(--rmx-glass-border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-shrink: 0;
+  gap: 6px;
+}
+
+.footer-btn {
+  padding: 6px 10px;
+  font-size: var(--rmx-font-xs);
+  font-weight: 500;
+  border: 1px solid var(--rmx-glass-border);
+  border-radius: var(--rmx-radius-sm);
+  background: var(--rmx-glass-bg);
+  color: var(--rmx-text-secondary);
+  cursor: pointer;
+  transition: all var(--rmx-transition-base);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.footer-btn:hover {
+  background: var(--rmx-glass-hover);
+  border-color: rgba(255, 255, 255, 0.15);
+  color: var(--rmx-text-primary);
+}
+
+.footer-btn.primary {
+  background: var(--rmx-accent-gradient);
+  border-color: transparent;
+  color: white;
+}
+
+.footer-btn.primary:hover {
+  filter: brightness(1.1);
+}
+
+/* ============================================
+   View Toggle
+   ============================================ */
+.view-toggle {
+  display: flex;
+  border: 1px solid var(--rmx-glass-border);
+  border-radius: var(--rmx-radius-sm);
+  overflow: hidden;
+}
+
+.view-toggle button {
+  padding: 5px 8px;
+  border: none;
+  background: var(--rmx-glass-bg);
+  font-size: 10px;
+  cursor: pointer;
+  color: var(--rmx-text-secondary);
+  transition: all var(--rmx-transition-base);
+  white-space: nowrap;
+}
+
+.view-toggle button:hover {
+  background: var(--rmx-glass-hover);
+  color: var(--rmx-text-primary);
+}
+
+.view-toggle button.active {
+  background: var(--rmx-accent-bg);
+  color: var(--rmx-accent-primary);
+  font-weight: 600;
+}
+
+.view-toggle button:not(:last-child) {
+  border-right: 1px solid var(--rmx-glass-border);
+}
+
+/* ============================================
+   Animations
+   ============================================ */
+.fade-in {
+  animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ============================================
+   Loading Spinner
+   ============================================ */
+.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+}
+
+.spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--rmx-glass-border);
+  border-top-color: var(--rmx-accent-primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
