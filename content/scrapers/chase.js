@@ -243,11 +243,12 @@ const ChaseScraper = {
       }, 8000);
     });
 
-    // Click the offer (triggers SPA navigation to detail page)
+    // Click the plus button (may activate inline or navigate to detail page)
+    const urlBefore = window.location.href;
     this.log('Discovery target:', targetButton.tagName, targetButton.className?.substring?.(0, 60));
     this._safeClick(targetButton);
 
-    // Wait for detail page to load and fire its API calls
+    // Wait for activation/navigation and any API calls to fire
     await this.wait(3000);
 
     // Stop capturing
@@ -255,12 +256,18 @@ const ChaseScraper = {
 
     // Get all captured requests
     const captured = await capturePromise;
-    this.log(`Captured ${captured.length} POST/PUT/PATCH requests during discovery`);
+    this.log(`Captured ${captured.length} requests during discovery`);
 
-    // Navigate back to offers page
-    window.history.back();
-    await this.wait(2000);
-    await this.waitForOffers(10000);
+    // Only navigate back if the click caused navigation away from offers page
+    const urlAfter = window.location.href;
+    if (urlAfter !== urlBefore) {
+      this.log('Click navigated to detail page, going back...');
+      window.history.back();
+      await this.wait(2000);
+      await this.waitForOffers(10000);
+    } else {
+      this.log('Click activated inline (no navigation)');
+    }
 
     if (!this.isRunning) return false;
 
@@ -955,27 +962,33 @@ const ChaseScraper = {
       const merchant = this.getMerchantFromTile(targetTile);
       this.log(`Fallback: clicking "${merchant}" (${added + 1})`);
 
-      // Click to navigate to detail page (activates the offer)
+      // Click the plus button (inline activation) or tile (navigates)
+      const urlBefore = window.location.href;
       this._safeClick(targetButton);
 
-      // Wait briefly then go back via history.back (avoids full page reload)
+      // Wait for activation
       const delay = Math.floor(Math.random() * 400) + 600; // 600-1000ms
       await this.wait(delay);
-      window.history.back();
 
-      // Wait for offers to re-render
-      await this.waitForOffers(5000);
-      await this.wait(300);
-
-      // Chase lazy-loads tiles after history.back() — scroll to load all if partial
-      const visibleTiles = document.querySelectorAll(
-        '[data-testid="commerce-tile"], [data-cy="commerce-tile"]'
-      ).length;
-      if (visibleTiles < 50) {
-        window.scrollTo(0, document.body.scrollHeight);
-        await this.wait(1000);
-        window.scrollTo(0, 0);
+      // Only history.back() if click caused navigation
+      if (window.location.href !== urlBefore) {
+        window.history.back();
+        await this.waitForOffers(5000);
         await this.wait(300);
+
+        // Chase lazy-loads tiles after history.back() — scroll to load all if partial
+        const visibleTiles = document.querySelectorAll(
+          '[data-testid="commerce-tile"], [data-cy="commerce-tile"]'
+        ).length;
+        if (visibleTiles < 50) {
+          window.scrollTo(0, document.body.scrollHeight);
+          await this.wait(1000);
+          window.scrollTo(0, 0);
+          await this.wait(300);
+        }
+      } else {
+        // Inline activation — wait for tile UI to update
+        await this.wait(500);
       }
 
       added++;
@@ -1010,24 +1023,24 @@ const ChaseScraper = {
    * so we traverse up to find the real <button> or [role="button"].
    */
   _findTileButton(tile) {
-    let el = tile.querySelector(
+    const el = tile.querySelector(
       '[data-cy="commerce-tile-button"], [data-testid="commerce-tile-button"]'
     );
     if (!el) return null;
 
-    // If the match is an SVG/path/icon, walk up to find the actual button
-    if (el.tagName !== 'BUTTON' && el.tagName !== 'A') {
-      const btn = el.closest('button') || el.closest('[role="button"]') || el.closest('a');
-      if (btn && tile.contains(btn)) {
-        el = btn;
-      }
-      // If no button ancestor found, try finding a <button> in the tile directly
-      if (el.tagName !== 'BUTTON' && el.tagName !== 'A') {
-        const directBtn = tile.querySelector('button, [role="button"]');
-        if (directBtn) el = directBtn;
-      }
-    }
-    return el;
+    // Chase DOM: SVG(plus icon) → DIV.r9jbijb → DIV.r9jbijn → DIV[role=button](tile)
+    // We must click the SVG or its immediate wrapper — NOT the tile, which navigates
+    // to the detail page instead of activating the offer.
+    if (el.tagName === 'BUTTON' || el.tagName === 'A') return el;
+
+    // Look for a <button> ancestor, but stop before reaching the tile itself
+    const btn = el.closest('button');
+    if (btn && tile.contains(btn) && btn !== tile) return btn;
+
+    // No <button> found — return the SVG's parent container (the clickable wrapper)
+    // so the click event bubbles to Chase's "Add Offer" handler without
+    // reaching the tile's navigation handler
+    return el.parentElement || el;
   },
 
   /**
