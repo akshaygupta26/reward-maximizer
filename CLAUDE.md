@@ -195,12 +195,19 @@ Each scraper implements: `source`, `offersUrl`, `needsNavigation()`, `scrape()`,
 - **Live Chase API discovery testing** — Log into Chase, trigger sync, watch console for `[RMX-Chase]` Phase 1/2/3 logs. Verify: interceptor ready → discovery captures activation API → replay activates remaining offers. If discovery fails, confirm fallback click-and-navigate works at ~1s/offer.
 - **Live batch opt-in testing** — Test BatchOptIn on actual Amex portal (requires login). Verify MutationObserver timing, progress reporting, and in-place clicking.
 - **Live scraping tests** — Test scrapers on actual bank portals (requires login). Amex, Chase, Citi, BofA, etc.
-- **Banner dismiss persistence** — Dismiss state uses in-memory flag, resets on page reload and SPA navigation (known issues 6.3, 6.5)
+- **Banner dismiss persistence** — ✅ DONE (verified 2026-09-22): dismiss state already uses `sessionStorage` (`rmx_banner_dismissed`), survives SPA nav + page reloads within the tab session; SPA MutationObserver preserves dismiss on URL change.
 - **Live API endpoint discovery (other portals)** — Interceptors use heuristic URL patterns and field names. Log into each portal with `ExtractorConfig.logRawResponses = true` to discover actual API shapes.
 - **Amex multi-card activation** — `AmexInterceptor.activateAll()` is a skeleton. Implement once activation endpoint is discovered.
 - **Chase post-opt-in auto-populate** — After opt-in completes, offers should auto-save without requiring a second manual sync.
 
 ### Recent Updates
+- **Bug-squash pass #1 (2026-09-22, hema/bug-squash-1):**
+  - Fixed null-merchant crash: one malformed offer (missing `merchant`) used to throw inside `Array.filter` and kill all matching. Guards added in `merchant-banner.js` (`checkForOffers`), `service-worker.js` (`saveOffersToStorage` drops them with a warn, `checkStackingOpportunities`, `checkMerchantOffers`).
+  - Fixed stacking-only banner: when only cashback-portal offers match (no card offer), the banner title was empty. Now leads with "Earn $X cashback via Rakuten".
+  - Rakuten referral prompt now shows on stacking-only banners too (was gated behind having a card offer).
+  - Fixed badge/banner mismatch on subdomains: `service-worker.js checkMerchantOffers` used `hostname.split('.')[0]` ("shop" from shop.lululemon.com) while the banner used second-to-last part. SW now mirrors the banner's extraction + 3-char substring guard, so badge counts agree with the banner.
+  - Verified TODO "Banner dismiss persistence" was already fixed (sessionStorage); marked done.
+  - Tests: 185/185 passing (2 new regression tests for malformed-offer guard).
 - **Chase self-discovering API interception (2026-03-12):** New 3-phase activation for Chase offers:
   - **Phase 1 — API Discovery:** Created `content/chase-api-interceptor.js` (MAIN world via manifest `"world": "MAIN"`) that patches fetch/XHR to capture outgoing POST/PUT/PATCH requests. Chase scraper clicks ONE offer, captures the activation API call, extracts offer ID field and request template.
   - **Phase 2 — API Replay:** Replays captured template for all remaining offers in batches of 5 via postMessage to MAIN world. Expected: ~5-10s for 70 offers vs 3-5 min before.

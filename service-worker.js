@@ -136,14 +136,21 @@ async function saveOffersToStorage(newOffers, source) {
       const existingMap = new Map();
 
       existing.forEach(o => {
+        if (!o || !o.merchant) return; // skip malformed stored offers
         const key = `${o.source}-${o.merchant}`.toLowerCase();
         existingMap.set(key, o);
       });
 
+      // Drop malformed incoming offers (no merchant => can never match)
+      const validOffers = (newOffers || []).filter(o => o && o.merchant);
+      if (validOffers.length !== (newOffers || []).length) {
+        debug.warn('[RMX-SW] Dropped', (newOffers || []).length - validOffers.length, 'offers with missing merchant from', source);
+      }
+
       let added = 0;
       let updated = 0;
 
-      newOffers.forEach(offer => {
+      validOffers.forEach(offer => {
         const key = `${source}-${offer.merchant}`.toLowerCase();
         const offerWithMeta = {
           ...offer,
@@ -177,10 +184,11 @@ async function checkStackingOpportunities(merchant) {
   const offers = await getOffersFromStorage();
   const merchantLower = merchant.toLowerCase();
 
-  const matchingOffers = offers.filter(o =>
-    o.merchant.toLowerCase().includes(merchantLower) ||
-    merchantLower.includes(o.merchant.toLowerCase())
-  );
+  const matchingOffers = offers.filter(o => {
+    if (!o || !o.merchant) return false;
+    return o.merchant.toLowerCase().includes(merchantLower) ||
+      merchantLower.includes(o.merchant.toLowerCase());
+  });
 
   const cardOffers = matchingOffers.filter(o =>
     !['rakuten', 'capital-one-shopping', 'topcashback'].includes(o.source)
@@ -272,11 +280,27 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
 // Check if we have offers for a merchant
 async function checkMerchantOffers(hostname, tabId) {
   const offers = await getOffersFromStorage();
-  const merchantName = hostname.split('.')[0];
+
+  // Same merchant-name extraction as merchant-banner.js: for subdomains like
+  // shop.lululemon.com use the second-to-last part ("lululemon")
+  const parts = hostname.replace(/^www\./, '').split('.');
+  const merchantName = parts.length >= 3 ? parts[parts.length - 2] : parts[0];
+  const normalizedSite = merchantName.replace(/[^a-z0-9]/g, '');
 
   const matchingOffers = offers.filter(o => {
+    if (!o || !o.merchant) return false;
     const offerMerchant = o.merchant.toLowerCase();
-    return offerMerchant.includes(merchantName) || merchantName.includes(offerMerchant);
+    const normalizedOffer = offerMerchant.replace(/[^a-z0-9]/g, '');
+
+    // Exact match after normalization (always allowed)
+    if (normalizedOffer === normalizedSite) return true;
+
+    // Substring matching only when both sides are 3+ chars (mirrors banner,
+    // avoids false positives like "x" matching "Expedia")
+    if (normalizedSite.length >= 3 && normalizedOffer.length >= 3) {
+      return offerMerchant.includes(merchantName) || merchantName.includes(offerMerchant);
+    }
+    return false;
   });
 
   if (matchingOffers.length > 0) {

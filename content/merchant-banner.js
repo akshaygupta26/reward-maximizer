@@ -71,6 +71,7 @@ async function checkForOffers() {
     const normalizedSite = merchantName.replace(/[^a-z0-9]/g, '');
 
     currentOffers = allOffers.filter(offer => {
+      if (!offer || !offer.merchant) return false; // skip malformed offers (no merchant to match)
       const offerMerchant = offer.merchant.toLowerCase();
       const normalizedOffer = offerMerchant.replace(/[^a-z0-9]/g, '');
 
@@ -174,16 +175,22 @@ function createBannerHTML(cardOffer, stackingOffer) {
   let mainMessage = '';
   if (cardOffer) {
     mainMessage = `Use your <strong style="color:${sourceColor}">${sourceName}</strong> card for <strong style="color:#34d399">${cardOffer.value}</strong>`;
+  } else if (stackingOffer) {
+    // Stacking-only (e.g. Rakuten cashback with no card offer): lead with the cashback
+    const onlyName = getSourceDisplayName(stackingOffer.source);
+    const onlyColor = getSourceColor(stackingOffer.source);
+    mainMessage = `Earn <strong style="color:#34d399">${stackingOffer.value}</strong> cashback via <strong style="color:${onlyColor}">${onlyName}</strong>`;
   }
 
   let stackingMessage = '';
-  if (stackingOffer) {
+  if (cardOffer && stackingOffer) {
     const stackingName = getSourceDisplayName(stackingOffer.source);
     const stackingColor = getSourceColor(stackingOffer.source);
     stackingMessage = `<div class="rmx-stacking">Stack with <span style="color:${stackingColor}">${stackingName}</span> for <span style="color:#34d399">${stackingOffer.value}</span> extra cashback</div>`;
-    if (stackingOffer.source === 'rakuten') {
-      stackingMessage += `<div class="rmx-referral">Don't have Rakuten? <a href="${RAKUTEN_REFERRAL_URL}" target="_blank" rel="noopener">Sign up free →</a><br><span class="rmx-referral-disc">${REFERRAL_DISCLOSURE}</span></div>`;
-    }
+  }
+  // Referral prompt shows whenever a Rakuten offer is present (card offer or not)
+  if (stackingOffer && stackingOffer.source === 'rakuten') {
+    stackingMessage += `<div class="rmx-referral">Don't have Rakuten? <a href="${RAKUTEN_REFERRAL_URL}" target="_blank" rel="noopener">Sign up free →</a><br><span class="rmx-referral-disc">${REFERRAL_DISCLOSURE}</span></div>`;
   }
 
   return `

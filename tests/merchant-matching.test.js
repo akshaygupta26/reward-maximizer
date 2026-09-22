@@ -124,7 +124,6 @@ describe('Merchant Matching', () => {
     test('empty merchant name does not match non-empty hostname', () => {
       expect(matchesMerchant('', 'www.nike.com')).toBe(false);
     });
-
     test('special characters are stripped for comparison', () => {
       expect(matchesMerchant("Macy's", 'www.macys.com')).toBe(true);
     });
@@ -144,6 +143,37 @@ describe('Merchant Matching', () => {
 
     test('"H&M" matches hm.com via stripped comparison', () => {
       expect(matchesMerchant('H&M', 'www.hm.com')).toBe(true);
+    });
+  });
+
+  describe('malformed offer guard (banner + service worker)', () => {
+    // Mirrors the guard in merchant-banner.js checkForOffers and the
+    // service-worker filters: offers without a merchant are skipped, never crashed on
+    function filterOffers(offers, hostname) {
+      return offers.filter(offer => {
+        if (!offer || !offer.merchant) return false;
+        return matchesMerchant(offer.merchant, hostname);
+      });
+    }
+
+    test('null/undefined merchant offers are skipped without throwing', () => {
+      const offers = [
+        { merchant: 'Nike', source: 'amex', value: '10% back' },
+        { merchant: null, source: 'chase', value: '5% back' },
+        { merchant: undefined, source: 'citi', value: '$5 back' },
+        { merchant: '', source: 'bofa', value: '$3 back' },
+        null,
+        undefined,
+      ];
+      expect(() => filterOffers(offers, 'www.nike.com')).not.toThrow();
+      const matched = filterOffers(offers, 'www.nike.com');
+      expect(matched).toHaveLength(1);
+      expect(matched[0].merchant).toBe('Nike');
+    });
+
+    test('all-malformed offer list yields empty matches', () => {
+      expect(filterOffers([{ merchant: null }], 'www.nike.com')).toHaveLength(0);
+      expect(filterOffers([], 'www.nike.com')).toHaveLength(0);
     });
   });
 });
