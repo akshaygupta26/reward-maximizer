@@ -33,21 +33,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Load portal selection from storage
   async function loadPortalSelection() {
-    return new Promise((resolve) => {
-      chrome.storage.local.get(['rmx_user_cards'], (result) => {
-        const userPortals = result.rmx_user_cards || [];
-        debug.log('[RMX-Settings] Loading user portals:', userPortals);
+    const userPortals = await Storage.getSelectedPortals();
+    debug.log('[RMX-Settings] Loading user portals:', userPortals);
 
-        // Check the appropriate checkboxes
-        document.querySelectorAll('.portal-checkbox input[type="checkbox"][data-portal="true"]').forEach(checkbox => {
-          const portalValue = checkbox.value;
-          if (userPortals.includes(portalValue)) {
-            checkbox.checked = true;
-          }
-        });
-
-        resolve();
-      });
+    // Check the appropriate checkboxes
+    document.querySelectorAll('.portal-checkbox input[type="checkbox"][data-portal="true"]').forEach(checkbox => {
+      const portalValue = checkbox.value;
+      if (userPortals.includes(portalValue)) {
+        checkbox.checked = true;
+      }
     });
   }
 
@@ -67,13 +61,13 @@ document.addEventListener('DOMContentLoaded', async () => {
       return;
     }
 
-    return new Promise((resolve) => {
-      chrome.storage.local.set({ rmx_user_cards: selectedPortals }, () => {
-        debug.log('[RMX-Settings] ✅ Portals saved successfully');
-        showToast('Card selection saved! Popup will update on next open.', 'success');
-        resolve();
-      });
-    });
+    const saved = await Storage.setSelectedPortals(selectedPortals);
+    if (!saved) {
+      showToast('Could not save portal selection', 'error');
+      return;
+    }
+    debug.log('[RMX-Settings] ✅ Portals saved successfully');
+    showToast('Card selection saved! Popup will update on next open.', 'success');
   }
 
   // Render card selection grid
@@ -104,7 +98,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Card chip click handlers
     cardGrid.querySelectorAll('.card-chip').forEach(chip => {
-      chip.addEventListener('click', (e) => {
+      chip.addEventListener('click', async (e) => {
         e.stopPropagation();
         const cardId = chip.dataset.cardId;
 
@@ -116,8 +110,8 @@ document.addEventListener('DOMContentLoaded', async () => {
           chip.classList.add('selected');
         }
 
-        Storage.setUserCards(userCards);
-        showToast('Cards updated');
+        const saved = await Storage.setUserCards(userCards);
+        showToast(saved ? 'Cards updated' : 'Could not save cards', saved ? '' : 'error');
       });
     });
   }

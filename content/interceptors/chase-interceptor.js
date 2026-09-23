@@ -292,7 +292,8 @@ const ChaseInterceptor = {
         phase
       };
       if (result) msg.result = result;
-      chrome.runtime.sendMessage(msg);
+      const response = chrome.runtime.sendMessage(msg);
+      if (response && typeof response.catch === 'function') response.catch(() => {});
     } catch (e) {
       // Popup might be closed
     }

@@ -11,7 +11,8 @@
   "permissions": [
     "storage",
     "tabs",
-    "notifications"
+    "notifications",
+    "alarms"
   ],
   "host_permissions": [
     "<all_urls>"
@@ -37,6 +38,7 @@
         "lib/categories.js",
         "lib/extractor-config.js",
         "lib/interceptor-health.js",
+        "lib/offer-utils.js",
         "content/utils.js",
         "content/interceptors/base-interceptor.js",
         "content/interceptors/amex-interceptor.js",
@@ -65,6 +67,7 @@
         "lib/categories.js",
         "lib/extractor-config.js",
         "lib/interceptor-health.js",
+        "lib/offer-utils.js",
         "content/utils.js",
         "content/interceptors/base-interceptor.js",
         "content/interceptors/chase-interceptor.js",
@@ -85,6 +88,7 @@
         "lib/categories.js",
         "lib/extractor-config.js",
         "lib/interceptor-health.js",
+        "lib/offer-utils.js",
         "content/utils.js",
         "content/interceptors/base-interceptor.js",
         "content/interceptors/citi-interceptor.js",
@@ -102,6 +106,7 @@
         "lib/categories.js",
         "lib/extractor-config.js",
         "lib/interceptor-health.js",
+        "lib/offer-utils.js",
         "content/utils.js",
         "content/interceptors/base-interceptor.js",
         "content/interceptors/capital-one-interceptor.js",
@@ -117,6 +122,7 @@
       "js": [
         "lib/debug.js",
         "lib/categories.js",
+        "lib/offer-utils.js",
         "content/utils.js",
         "content/scrapers/capital-one-shopping.js",
         "content/content-main.js"
@@ -132,6 +138,7 @@
         "lib/categories.js",
         "lib/extractor-config.js",
         "lib/interceptor-health.js",
+        "lib/offer-utils.js",
         "content/utils.js",
         "content/interceptors/base-interceptor.js",
         "content/interceptors/discover-interceptor.js",
@@ -150,6 +157,7 @@
         "lib/categories.js",
         "lib/extractor-config.js",
         "lib/interceptor-health.js",
+        "lib/offer-utils.js",
         "content/utils.js",
         "content/interceptors/base-interceptor.js",
         "content/interceptors/bofa-interceptor.js",
@@ -167,6 +175,7 @@
         "lib/categories.js",
         "lib/extractor-config.js",
         "lib/interceptor-health.js",
+        "lib/offer-utils.js",
         "content/utils.js",
         "content/interceptors/base-interceptor.js",
         "content/interceptors/usbank-interceptor.js",
@@ -182,6 +191,7 @@
       "js": [
         "lib/debug.js",
         "lib/categories.js",
+        "lib/offer-utils.js",
         "content/utils.js",
         "content/scrapers/rakuten.js",
         "content/content-main.js"
@@ -194,6 +204,7 @@
       ],
       "js": [
         "lib/debug.js",
+        "lib/offer-utils.js",
         "data/referral.js",
         "content/merchant-banner.js"
       ],
@@ -211,12 +222,6 @@
         "https://*.usbank.com/*",
         "https://*.rakuten.com/*"
       ]
-    }
-  ],
-  "web_accessible_resources": [
-    {
-      "resources": ["lib/*.js", "data/*.js", "shared/*.css"],
-      "matches": ["<all_urls>"]
     }
   ]
 }

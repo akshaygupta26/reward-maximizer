@@ -30,6 +30,26 @@
     return RESPONSE_OBSERVE_PATTERNS.some(function(p) { return lower.indexOf(p) !== -1; });
   }
 
+  // The MAIN-world bridge is observable by page scripts, so command payloads
+  // must never be allowed to turn it into an arbitrary cross-origin request
+  // primitive. Chase activation and replay endpoints are HTTPS subdomains of
+  // chase.com; beacon activation is restricted further to reco.chase.com.
+  function allowedChaseUrl(rawUrl, recoOnly) {
+    if (typeof rawUrl !== 'string' || rawUrl.length > 4096) return null;
+    try {
+      var parsed = new URL(rawUrl, window.location.href);
+      var host = parsed.hostname.toLowerCase();
+      if (parsed.protocol !== 'https:' ||
+          (host !== 'chase.com' && host.slice(-'.chase.com'.length) !== '.chase.com')) {
+        return null;
+      }
+      if (recoOnly && host !== 'reco.chase.com') return null;
+      return parsed.href;
+    } catch (e) {
+      return null;
+    }
+  }
+
   // ---- Patch fetch ----
 
   var originalFetch = window.fetch;
@@ -292,11 +312,14 @@
         // Fire Image beacon GETs in MAIN world (has session cookies, bypasses CSP)
         var beaconUrls = event.data.data;
         if (Array.isArray(beaconUrls)) {
-          beaconUrls.forEach(function(u) { new Image().src = u; });
+          var allowedBeaconUrls = beaconUrls
+            .map(function(u) { return allowedChaseUrl(u, true); })
+            .filter(Boolean);
+          allowedBeaconUrls.forEach(function(u) { new Image().src = u; });
           window.postMessage({
             channel: CHANNEL,
             type: 'beacons_fired',
-            data: { count: beaconUrls.length }
+            data: { count: allowedBeaconUrls.length }
           }, '*');
         }
         break;
@@ -311,6 +334,16 @@
             allUrl += '&offer-count=200';
           } else {
             allUrl += '?offer-count=200';
+          }
+          allUrl = allowedChaseUrl(allUrl, false);
+          if (!allUrl) {
+            window.postMessage({
+              channel: CHANNEL,
+              type: 'all_offers_response',
+              data: null,
+              error: 'invalid_url'
+            }, '*');
+            break;
           }
           console.log('[RMX-MAIN] fetch_all_offers: requesting', allUrl.substring(0, 150));
           originalFetch(allUrl, {
@@ -356,7 +389,15 @@
         if (!detail || !detail.template) break;
 
         var tpl = detail.template;
-        var replayUrl = detail.newUrl || tpl.url;
+        var replayUrl = allowedChaseUrl(detail.newUrl || tpl.url, false);
+        if (!replayUrl) {
+          window.postMessage({
+            channel: CHANNEL,
+            type: 'replay_result',
+            data: { success: false, offerId: detail.offerId, error: 'invalid_url' }
+          }, '*');
+          break;
+        }
         var replayInit = {
           method: tpl.method,
           headers: tpl.headers,

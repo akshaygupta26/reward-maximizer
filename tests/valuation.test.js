@@ -45,6 +45,11 @@ describe('Valuation', () => {
       expect(result.amount).toBe(0);
     });
 
+    test('returns unknown for non-string values', () => {
+      expect(() => Valuation.parseOfferValue(5)).not.toThrow();
+      expect(Valuation.parseOfferValue(5).type).toBe('unknown');
+    });
+
     test('returns unknown for "Check portal"', () => {
       const result = Valuation.parseOfferValue('Check portal');
       expect(result.type).toBe('unknown');

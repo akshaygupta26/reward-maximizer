@@ -253,9 +253,19 @@ const ContentUtils = {
   // Send message to popup/background
   sendMessage(message) {
     return new Promise((resolve) => {
-      chrome.runtime.sendMessage(message, (response) => {
-        resolve(response);
-      });
+      try {
+        chrome.runtime.sendMessage(message, (response) => {
+          if (chrome.runtime.lastError) {
+            debug.warn('[Reward Maximizer] message failed:', chrome.runtime.lastError.message);
+            resolve({ error: chrome.runtime.lastError.message });
+            return;
+          }
+          resolve(response);
+        });
+      } catch (error) {
+        debug.warn('[Reward Maximizer] message failed:', error);
+        resolve({ error: error.message });
+      }
     });
   },
 

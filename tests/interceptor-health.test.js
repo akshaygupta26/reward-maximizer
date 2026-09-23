@@ -1,5 +1,6 @@
 const storageData = {};
 global.chrome = {
+  runtime: { lastError: null },
   storage: {
     local: {
       get: jest.fn((keys, cb) => {
@@ -21,6 +22,7 @@ const { InterceptorHealth } = require('../lib/interceptor-health.js');
 describe('InterceptorHealth', () => {
   beforeEach(() => {
     Object.keys(storageData).forEach(k => delete storageData[k]);
+    global.chrome.runtime.lastError = null;
     jest.clearAllMocks();
   });
 
@@ -79,5 +81,11 @@ describe('InterceptorHealth', () => {
     const all = await InterceptorHealth.getAllHealth();
     expect(all.chase).toBeDefined();
     expect(all.amex).toBeDefined();
+  });
+
+  test('storage API errors are contained', async () => {
+    global.chrome.runtime.lastError = { message: 'storage unavailable' };
+    await expect(InterceptorHealth.recordSuccess('chase', 1)).resolves.toBeUndefined();
+    expect(global.debug.error).toHaveBeenCalled();
   });
 });

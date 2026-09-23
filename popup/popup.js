@@ -39,6 +39,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Listen for batch opt-in progress from content scripts
   chrome.runtime.onMessage.addListener((message) => {
+    if (!message || typeof message.action !== 'string') return false;
     if (message.action === 'batch_progress') {
       const { source, current, total, merchant, phase, result } = message;
 
@@ -137,6 +138,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       // Find matching offers using fuzzy matching
       const matchingOffers = offers.filter(offer => {
+        if (!OfferUtils.isValidOffer(offer)) return false;
         const offerMerchant = offer.merchant.toLowerCase();
         const match = offerMerchant.includes(merchantName) ||
                       merchantName.includes(offerMerchant) ||
@@ -192,34 +194,27 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Initialize user card visibility
   async function initializeUserCards() {
-    return new Promise((resolve) => {
-      chrome.storage.local.get(['rmx_user_cards'], (result) => {
-        const userCards = result.rmx_user_cards || [];
+    const selectedPortals = await Storage.getSelectedPortals();
 
-        debug.log('[RMX-Popup] User cards from storage:', userCards);
+    debug.log('[RMX-Popup] Selected portals from storage:', selectedPortals);
 
-        // If no cards selected, show all (backward compatibility for existing users)
-        if (userCards.length === 0) {
-          debug.log('[RMX-Popup] No cards selected, showing all buttons');
-          resolve();
-          return;
-        }
+    // If no portals are selected, show all (backward compatibility for existing users)
+    if (selectedPortals.length === 0) {
+      debug.log('[RMX-Popup] No portals selected, showing all buttons');
+      return;
+    }
 
-        // Hide buttons for cards user doesn't have
-        const allButtons = document.querySelectorAll('.sync-btn[data-source]');
-        allButtons.forEach(btn => {
-          const source = btn.dataset.source;
-          if (!userCards.includes(source)) {
-            debug.log('[RMX-Popup] Hiding button for:', source);
-            btn.style.display = 'none';
-          } else {
-            debug.log('[RMX-Popup] Showing button for:', source);
-            btn.style.display = '';
-          }
-        });
-
-        resolve();
-      });
+    // Hide buttons for portals the user did not select
+    const allButtons = document.querySelectorAll('.sync-btn[data-source]');
+    allButtons.forEach(btn => {
+      const source = btn.dataset.source;
+      if (!selectedPortals.includes(source)) {
+        debug.log('[RMX-Popup] Hiding button for:', source);
+        btn.style.display = 'none';
+      } else {
+        debug.log('[RMX-Popup] Showing button for:', source);
+        btn.style.display = '';
+      }
     });
   }
 
@@ -279,11 +274,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     debug.log('[RMX-Popup] Starting Sync All...');
 
     // Get user's selected cards from storage
-    const result = await new Promise(resolve => {
-      chrome.storage.local.get(['rmx_user_cards'], resolve);
-    });
-
-    let portals = result.rmx_user_cards || [];
+    let portals = await Storage.getSelectedPortals();
 
     // If no cards selected, use all portals (backward compatibility)
     if (portals.length === 0) {
@@ -301,13 +292,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       syncAllBtn.textContent = 'Starting...';
       updateStatus(`Starting sync of ${portals.length} portal(s)...`, 'success');
 
-      // Initialize progress
-      await chrome.runtime.sendMessage({
-        action: 'start_sync',
-        portal: portals[0]
-      });
-
-      // Set remaining portals in service worker
+      // Persist the queue before notifying the worker. The worker may be
+      // restarted between messages, so it must be able to hydrate the queue.
       await chrome.storage.local.set({
         rmx_sync_progress: {
           isRunning: true,
@@ -317,6 +303,13 @@ document.addEventListener('DOMContentLoaded', async () => {
           totalOffers: 0,
           errors: []
         }
+      });
+
+      // Initialize progress after the durable queue is in storage.
+      await sendRuntimeMessage({
+        action: 'start_sync',
+        portal: portals[0],
+        portals
       });
 
       // Get current tab
@@ -367,6 +360,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     debug.log('[RMX-Popup] Syncing source:', source);
 
     const btn = document.querySelector(`.sync-btn.${source}`);
+    if (!btn) {
+      updateStatus(`Unknown sync source: ${source}`, 'error');
+      return;
+    }
     const originalText = btn.textContent;
 
     try {
@@ -410,7 +407,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       };
 
       // Notify service worker that sync is starting
-      await chrome.runtime.sendMessage({
+      await sendRuntimeMessage({
         action: 'start_sync',
         portal: source
       });
@@ -531,7 +528,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         await Storage.updateSyncHistory(source);
 
         // Notify service worker of successful sync
-        await chrome.runtime.sendMessage({
+        await sendRuntimeMessage({
           action: 'complete_sync',
           portal: source,
           offersCount: response.offers.length
@@ -550,7 +547,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         debug.log('[RMX-Popup] No offers received from scraper. Response:', response);
 
         // Notify service worker (0 offers but successful)
-        await chrome.runtime.sendMessage({
+        await sendRuntimeMessage({
           action: 'complete_sync',
           portal: source,
           offersCount: 0
@@ -562,7 +559,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       debug.error('[RMX-Popup] Sync failed:', err);
 
       // Notify service worker of error
-      await chrome.runtime.sendMessage({
+      await sendRuntimeMessage({
         action: 'sync_error',
         portal: source,
         error: err.message
@@ -580,16 +577,30 @@ document.addEventListener('DOMContentLoaded', async () => {
   function sendMessageToTab(tabId, message) {
     debug.log('[RMX-Popup] Sending message to tab', tabId, ':', message);
     return new Promise((resolve) => {
-      chrome.tabs.sendMessage(tabId, message, (response) => {
-        if (chrome.runtime.lastError) {
-          debug.error('[RMX-Popup] Message error:', chrome.runtime.lastError.message);
-          resolve({ error: chrome.runtime.lastError.message });
-        } else {
-          debug.log('[RMX-Popup] Received response:', response);
-          resolve(response);
-        }
-      });
+      try {
+        chrome.tabs.sendMessage(tabId, message, (response) => {
+          if (chrome.runtime.lastError) {
+            debug.error('[RMX-Popup] Message error:', chrome.runtime.lastError.message);
+            resolve({ error: chrome.runtime.lastError.message });
+          } else {
+            debug.log('[RMX-Popup] Received response:', response);
+            resolve(response);
+          }
+        });
+      } catch (error) {
+        debug.error('[RMX-Popup] Message error:', error);
+        resolve({ error: error.message });
+      }
     });
+  }
+
+  async function sendRuntimeMessage(message) {
+    try {
+      return await chrome.runtime.sendMessage(message);
+    } catch (error) {
+      debug.warn('[RMX-Popup] Runtime message failed:', error);
+      return { error: error.message };
+    }
   }
 
   // Apply filters
@@ -740,10 +751,12 @@ document.addEventListener('DOMContentLoaded', async () => {
               const displayValue = Valuation.formatValueDisplay(valuePerDollar);
 
               const isStacking = ['rakuten', 'capital-one-shopping'].includes(offer.source);
+              const safeSource = escapeHtml(offer.source);
+              const safeSourceName = escapeHtml(formatSource(offer.source));
 
               return `
                 <div class="offer-row">
-                  <span class="offer-source ${offer.source}">${formatSource(offer.source)}</span>
+                  <span class="offer-source ${safeSource}">${safeSourceName}</span>
                   <span class="offer-value">${escapeHtml(offer.value)}</span>
                   <span class="offer-cpp">${displayValue}</span>
                   ${idx === 0 && sortedOffers.length > 1 ? '<span class="best-badge">BEST</span>' : ''}
@@ -779,7 +792,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       return `
         <div class="merchant-card fade-in">
           <div class="merchant-header card-view-header">
-            <span class="merchant-name">${sourceInfo.name}</span>
+            <span class="merchant-name">${escapeHtml(sourceInfo.name)}</span>
             <span class="merchant-category">${group.offers.length} offers</span>
           </div>
           <div class="merchant-offers">
@@ -809,9 +822,9 @@ document.addEventListener('DOMContentLoaded', async () => {
           <span class="merchant-category">${group.offers.length} offers</span>
         </div>
         <div class="merchant-offers">
-          ${group.offers.slice(0, 8).map(offer => `
-            <div class="offer-row">
-              <span class="offer-source ${offer.source}">${formatSource(offer.source)}</span>
+            ${group.offers.slice(0, 8).map(offer => `
+              <div class="offer-row">
+                <span class="offer-source ${escapeHtml(offer.source)}">${escapeHtml(formatSource(offer.source))}</span>
               <span class="card-view-merchant">${escapeHtml(offer.merchant)}</span>
               <span class="offer-value">${escapeHtml(offer.value)}</span>
             </div>

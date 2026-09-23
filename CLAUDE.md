@@ -42,6 +42,7 @@ Reward Maximizer/
 ├── settings/                          # settings.html, settings.js, settings.css
 ├── lib/
 │   ├── storage.js                     # Chrome storage abstraction, deduplication
+│   ├── offer-utils.js                  # Shared offer validation, normalization, keys, HTML escaping
 │   ├── debug.js                       # Centralized logging (DEBUG flag)
 │   ├── categories.js                  # Merchant categorization
 │   ├── valuation.js                   # Point value calculator
@@ -82,9 +83,9 @@ Reward Maximizer/
 }
 ```
 
-**Storage Keys:** `rmx_offers`, `rmx_settings`, `rmx_sync_history`, `rmx_user_cards`, `rmx_point_values`, `rmx_interceptor_health`
+**Storage Keys:** `rmx_offers`, `rmx_settings`, `rmx_sync_history`, `rmx_user_cards`, `rmx_selected_portals`, `rmx_sync_progress`, `rmx_point_values`, `rmx_interceptor_health`
 
-**Deduplication:** Composite key `${source}-${merchant.toLowerCase()}` in `lib/storage.js:100-179`
+**Deduplication:** `OfferUtils.getOfferKey(source, merchant)` provides a case- and whitespace-insensitive composite key with an unambiguous delimiter. `lib/storage.js`, `service-worker.js`, and `content-main.js` use the same key scheme.
 
 ---
 
@@ -98,7 +99,7 @@ offerMerchant.includes(merchantName) ||
 merchantName.includes(offerMerchant) ||
 offerMerchant.replace(/[^a-z0-9]/g, '') === merchantName.replace(/[^a-z0-9]/g, '')
 ```
-**Known limitations:** May miss "Aldo Shoes" vs "Aldo"; substring matching can cause false positives ("Target" matches "targetprocess.com"); empty merchant matches everything.
+**Known limitations:** May miss "Aldo Shoes" vs "Aldo"; substring matching can cause false positives ("Target" matches "targetprocess.com"). Malformed offers with empty merchants are discarded before matching.
 
 ### Stacking Logic
 - **Card offers** (cannot stack with each other): amex, chase, citi, capital-one, discover, bofa, usbank
@@ -158,7 +159,7 @@ Each scraper implements: `source`, `offersUrl`, `needsNavigation()`, `scrape()`,
 
 ## Testing
 
-**Unit tests:** 177 tests across 10 suites (Jest) — `npm test` (174 passing, 3 pre-existing failures)
+**Unit tests:** 217 tests across 14 suites (Jest) — `npm test` (all passing)
 - `tests/valuation.test.js` (28), `tests/categories.test.js` (16), `tests/storage.test.js` (15), `tests/merchant-matching.test.js` (18)
 - `tests/extractor-config.test.js` (11), `tests/base-interceptor.test.js` (15), `tests/interceptor-health.test.js` (8)
 - `tests/chase-interceptor.test.js` (10), `tests/amex-interceptor.test.js` (8), `tests/interceptor-fallback.test.js` (14)
@@ -189,7 +190,7 @@ Each scraper implements: `source`, `offersUrl`, `needsNavigation()`, `scrape()`,
 
 ---
 
-**Last Updated:** 2026-03-12
+**Last Updated:** 2026-09-22
 
 ### TODO (Next Session)
 - **Live Chase API discovery testing** — Log into Chase, trigger sync, watch console for `[RMX-Chase]` Phase 1/2/3 logs. Verify: interceptor ready → discovery captures activation API → replay activates remaining offers. If discovery fails, confirm fallback click-and-navigate works at ~1s/offer.
@@ -208,6 +209,15 @@ Each scraper implements: `source`, `offersUrl`, `needsNavigation()`, `scrape()`,
   - Fixed badge/banner mismatch on subdomains: `service-worker.js checkMerchantOffers` used `hostname.split('.')[0]` ("shop" from shop.lululemon.com) while the banner used second-to-last part. SW now mirrors the banner's extraction + 3-char substring guard, so badge counts agree with the banner.
   - Verified TODO "Banner dismiss persistence" was already fixed (sessionStorage); marked done.
   - Tests: 185/185 passing (2 new regression tests for malformed-offer guard).
+- **Bug-squash pass #2 (2026-09-22, hema/bug-squash-1):**
+  - Added shared `lib/offer-utils.js` for malformed-offer filtering, canonical source/merchant normalization, collision-safe deduplication keys, portal-ID validation (including the existing TopCashback source), and HTML escaping.
+  - Separated selected portal IDs into `rmx_selected_portals` instead of conflating them with individual card IDs in `rmx_user_cards`; legacy portal values are read non-destructively.
+  - Hardened storage, service-worker messages, iframe relays, all-frame `localStorage` access, runtime error handling, and fire-and-forget message sends against malformed data, closed ports, and `chrome.runtime.lastError` failures.
+  - Replaced deferred service-worker `setTimeout` cleanup with persisted progress and `chrome.alarms`; made offer badges tab-specific and invalidated stale checks at navigation start.
+  - Escaped scraped offer/source fields before banner and popup HTML interpolation; removed unused broad web-accessible library exposure.
+  - Restricted Chase MAIN-world replay/beacon commands to HTTPS Chase-owned URLs.
+  - Fixed the settings card-selection listener to await asynchronous storage writes; added a regression check for the async handler.
+  - Tests: 217/217 passing across 14 suites via `npm test -- --runInBand`.
 - **Chase self-discovering API interception (2026-03-12):** New 3-phase activation for Chase offers:
   - **Phase 1 — API Discovery:** Created `content/chase-api-interceptor.js` (MAIN world via manifest `"world": "MAIN"`) that patches fetch/XHR to capture outgoing POST/PUT/PATCH requests. Chase scraper clicks ONE offer, captures the activation API call, extracts offer ID field and request template.
   - **Phase 2 — API Replay:** Replays captured template for all remaining offers in batches of 5 via postMessage to MAIN world. Expected: ~5-10s for 70 offers vs 3-5 min before.

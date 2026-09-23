@@ -8,7 +8,32 @@ const AUTO_SYNC_KEY = 'rmx_auto_sync';
 const SYNC_STOPPED_KEY = 'rmx_sync_stopped';
 let _syncInProgress = false;
 // Persist stop flag in localStorage so it survives page reloads (e.g. Chase clickAndReturn)
-let _syncStopped = localStorage.getItem(SYNC_STOPPED_KEY) === 'true';
+function readLocalValue(key) {
+  try {
+    return window.localStorage.getItem(key);
+  } catch (error) {
+    debug.warn('[RMX-Orchestrator] localStorage read unavailable:', error);
+    return null;
+  }
+}
+
+function writeLocalValue(key, value) {
+  try {
+    window.localStorage.setItem(key, value);
+  } catch (error) {
+    debug.warn('[RMX-Orchestrator] localStorage write unavailable:', error);
+  }
+}
+
+function removeLocalValue(key) {
+  try {
+    window.localStorage.removeItem(key);
+  } catch (error) {
+    debug.warn('[RMX-Orchestrator] localStorage removal unavailable:', error);
+  }
+}
+
+let _syncStopped = readLocalValue(SYNC_STOPPED_KEY) === 'true';
 
 // ---- Site Detection ----
 
@@ -142,10 +167,14 @@ if (typeof BaseInterceptor !== 'undefined') {
 // Listen for interceptor data relayed from iframe via background
 if (!_rmxIsIframe) {
   chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-    if (request.action === 'interceptor_data_from_iframe' && request.offers) {
-      debug.log(`[RMX-Orchestrator] Received ${request.offers.length} offers from iframe for ${request.portal}`);
+    if (!request || typeof request.action !== 'string') return false;
+
+    if (request.action === 'interceptor_data_from_iframe' && Array.isArray(request.offers)) {
+      const offers = OfferUtils.filterValidOffers(request.offers);
+      if (offers.length === 0) return false;
+      debug.log(`[RMX-Orchestrator] Received ${offers.length} offers from iframe for ${request.portal}`);
       interceptorCache[request.portal] = {
-        offers: request.offers,
+        offers,
         meta: request.meta || {},
         timestamp: Date.now(),
         ready: true
@@ -289,7 +318,7 @@ async function handleScrapeRequest(sendResponse) {
     if (scraper && scraper.needsNavigation && scraper.needsNavigation()) {
       const offersUrl = scraper.getOffersUrl();
       if (offersUrl) {
-        localStorage.setItem(AUTO_SYNC_KEY, JSON.stringify({
+        writeLocalValue(AUTO_SYNC_KEY, JSON.stringify({
           site,
           status: 'pending',
           timestamp: Date.now()
@@ -327,7 +356,7 @@ async function handleScrapeRequest(sendResponse) {
 
 async function autoSyncIfPending() {
   if (_syncInProgress || _syncStopped) return;
-  const pendingStr = localStorage.getItem(AUTO_SYNC_KEY);
+  const pendingStr = readLocalValue(AUTO_SYNC_KEY);
   if (!pendingStr) return;
 
   try {
@@ -342,7 +371,7 @@ async function autoSyncIfPending() {
 
     if (scraper.needsNavigation && scraper.needsNavigation()) return;
 
-    localStorage.setItem(AUTO_SYNC_KEY, JSON.stringify({
+    writeLocalValue(AUTO_SYNC_KEY, JSON.stringify({
       ...pending,
       status: 'running'
     }));
@@ -361,7 +390,7 @@ async function autoSyncIfPending() {
     debug.warn('[RMX-Orchestrator] Auto-sync failed:', err);
   } finally {
     _syncInProgress = false;
-    localStorage.removeItem(AUTO_SYNC_KEY);
+    removeLocalValue(AUTO_SYNC_KEY);
   }
 }
 
@@ -370,19 +399,25 @@ async function autoSyncIfPending() {
 function mergeAndStoreOffers(newOffers, source) {
   return new Promise((resolve) => {
     chrome.storage.local.get(['rmx_offers'], (result) => {
-      const existing = result.rmx_offers || [];
+      if (chrome.runtime.lastError) {
+        debug.error('[RMX-Orchestrator] Failed to read offers for merge:', chrome.runtime.lastError.message);
+        resolve([]);
+        return;
+      }
+
+      const existing = OfferUtils.normalizeOfferRecords(result.rmx_offers);
 
       const mergedMap = new Map();
       existing.forEach(offer => {
-        const key = `${offer.source}-${offer.merchant}`.toLowerCase();
-        mergedMap.set(key, offer);
+        const key = OfferUtils.getOfferKey(offer.source, offer.merchant);
+        if (key) mergedMap.set(key, offer);
       });
 
-      newOffers.forEach(offer => {
-        const key = `${source}-${offer.merchant}`.toLowerCase();
+      OfferUtils.filterValidOffers(newOffers).forEach(offer => {
+        const key = OfferUtils.getOfferKey(source, offer.merchant);
         mergedMap.set(key, {
           ...offer,
-          source,
+          source: OfferUtils.normalizeSource(source),
           id: offer.id || `rmx_${Date.now().toString(36)}_${Math.random().toString(36).substr(2, 9)}`,
           optedInAt: offer.optedInAt || new Date().toISOString(),
           status: 'active'
@@ -390,7 +425,14 @@ function mergeAndStoreOffers(newOffers, source) {
       });
 
       const merged = Array.from(mergedMap.values());
-      chrome.storage.local.set({ rmx_offers: merged }, () => resolve(merged));
+      chrome.storage.local.set({ rmx_offers: merged }, () => {
+        if (chrome.runtime.lastError) {
+          debug.error('[RMX-Orchestrator] Failed to save merged offers:', chrome.runtime.lastError.message);
+          resolve([]);
+          return;
+        }
+        resolve(merged);
+      });
     });
   });
 }
@@ -400,18 +442,19 @@ function mergeAndStoreOffers(newOffers, source) {
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   // Only the top frame handles popup requests
   if (_rmxIsIframe) return;
+  if (!request || typeof request.action !== 'string') return false;
 
   if (request.action === 'scrape_offers') {
     // Clear the stop flag — user explicitly requested a new sync
     _syncStopped = false;
-    localStorage.removeItem(SYNC_STOPPED_KEY);
+    removeLocalValue(SYNC_STOPPED_KEY);
     handleScrapeRequest(sendResponse);
     return true; // Keep message channel open for async response
   }
 
   if (request.action === 'stop_sync') {
     _syncStopped = true;
-    localStorage.setItem(SYNC_STOPPED_KEY, 'true');
+    writeLocalValue(SYNC_STOPPED_KEY, 'true');
     const site = detectSite();
     const scraper = getScraper(site);
     if (scraper && typeof scraper.stop === 'function') {
@@ -419,7 +462,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       debug.log('[RMX-Orchestrator] Sync stopped by user for', site);
     }
     // Clear any pending auto-sync so hashchange doesn't restart
-    localStorage.removeItem(AUTO_SYNC_KEY);
+    removeLocalValue(AUTO_SYNC_KEY);
     chrome.storage.local.remove('rmx_pending_sync').catch(() => {});
     sendResponse({ stopped: true, site });
     return false;
@@ -442,6 +485,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (typeof CapitalOneScraper !== 'undefined' && CapitalOneScraper.checkCurrentSite) {
       CapitalOneScraper.checkCurrentSite().then(result => {
         sendResponse(result);
+      }).catch(error => {
+        debug.error('[RMX-Orchestrator] Portal check failed:', error);
+        sendResponse({ available: false, error: error.message });
       });
       return true;
     }
@@ -537,6 +583,8 @@ if (!_rmxIsIframe) {
     action: 'content_script_ready',
     site: detectSite(),
     url: window.location.href
+  }).catch(error => {
+    debug.warn('[RMX-Orchestrator] Failed to notify service worker:', error);
   });
 
   // SPA hash navigation: re-check pending sync after hash changes

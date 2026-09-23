@@ -1093,7 +1093,7 @@ const ChaseScraper = {
    */
   reportProgress(data) {
     try {
-      chrome.runtime.sendMessage({
+      const result = chrome.runtime.sendMessage({
         action: 'batch_progress',
         source: 'chase',
         current: data.current || 0,
@@ -1102,6 +1102,7 @@ const ChaseScraper = {
         phase: data.phase || 'clicking',
         result: data.result || undefined
       });
+      if (result && typeof result.catch === 'function') result.catch(() => {});
     } catch (e) { /* popup may be closed */ }
   },
 

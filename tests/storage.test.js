@@ -47,6 +47,21 @@ describe('Storage', () => {
       expect(offers.length).toBe(1);
       expect(offers[0].merchant).toBe('Nike');
     });
+
+    test('ignores malformed stored offers without throwing', async () => {
+      chromeMock.storage.local.set({
+        [StorageKeys.OFFERS]: [
+          null,
+          { merchant: null, source: 'chase' },
+          { merchant: 42, source: 'citi' },
+          { merchant: 'Nike', source: 'amex', value: '5%' }
+        ]
+      });
+
+      await expect(Storage.getOffers()).resolves.toEqual([
+        { merchant: 'Nike', source: 'amex', value: '5%' }
+      ]);
+    });
   });
 
   describe('saveOffers (deduplication)', () => {
@@ -122,6 +137,56 @@ describe('Storage', () => {
       expect(result.updated).toBe(1);
       expect(result.added).toBe(0);
     });
+
+    test('deduplicates source and trimmed merchant consistently', async () => {
+      chromeMock.storage.local.set({
+        [StorageKeys.OFFERS]: [
+          { id: 'old', merchant: ' Nike ', source: 'AMEX', value: '3% back' }
+        ]
+      });
+
+      const result = await Storage.saveOffers([{ merchant: 'nike', value: '5% back' }], 'amex');
+      expect(result.updated).toBe(1);
+      expect(result.added).toBe(0);
+      expect((await Storage.getOffers())).toHaveLength(1);
+    });
+
+    test('normalizes source before clearing offers', async () => {
+      chromeMock.storage.local.set({
+        [StorageKeys.OFFERS]: [{ id: 'old', merchant: 'Nike', source: 'AMEX' }]
+      });
+
+      await Storage.clearOffersForSource(' amex ');
+      await expect(Storage.getOffers()).resolves.toEqual([]);
+    });
+
+    test('does not crash when existing storage contains null records', async () => {
+      chromeMock.storage.local.set({
+        [StorageKeys.OFFERS]: [null, { merchant: null }, { merchant: 'Nike', source: 'amex' }]
+      });
+
+      await expect(Storage.saveOffers([{ merchant: 'Adidas', value: '3%' }], 'chase'))
+        .resolves.toMatchObject({ added: 1, total: 2 });
+    });
+  });
+
+  describe('card and portal selections', () => {
+    test('stores card IDs and portal IDs independently', async () => {
+      await Storage.setUserCards(['amex-mr-gold']);
+      await Storage.setSelectedPortals([' AMEX ', 'rakuten', 'unknown']);
+
+      await expect(Storage.getUserCards()).resolves.toEqual(['amex-mr-gold']);
+      await expect(Storage.getSelectedPortals()).resolves.toEqual(['amex', 'rakuten']);
+    });
+
+    test('falls back to legacy portal values without overwriting card data', async () => {
+      chromeMock.storage.local.set({
+        [StorageKeys.USER_CARDS]: ['chase', 'not-a-portal']
+      });
+
+      await expect(Storage.getSelectedPortals()).resolves.toEqual(['chase']);
+      await expect(Storage.getUserCards()).resolves.toEqual(['chase', 'not-a-portal']);
+    });
   });
 
   describe('deleteOffer', () => {
@@ -179,6 +244,16 @@ describe('Storage', () => {
       offers = await Storage.getOffers();
       expect(offers.length).toBe(1);
       expect(offers[0].merchant).toBe('Nike');
+    });
+
+    test('exports legacy portal selections without rewriting card data', async () => {
+      chromeMock.storage.local.set({
+        [StorageKeys.USER_CARDS]: ['chase', 'amex-mr-gold']
+      });
+
+      const exported = await Storage.exportAllData();
+      expect(exported.selectedPortals).toEqual(['chase']);
+      expect(exported.userCards).toEqual(['chase', 'amex-mr-gold']);
     });
   });
 });

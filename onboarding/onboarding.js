@@ -216,7 +216,9 @@ document.addEventListener('DOMContentLoaded', () => {
       await new Promise((resolve, reject) => {
         chrome.storage.local.set({
           rmx_onboarding_complete: true,
-          rmx_user_cards: selectedCards,
+          // Portal selection has its own key; rmx_user_cards is reserved for
+          // individual card IDs selected later in Settings.
+          rmx_selected_portals: selectedCards,
           rmx_banner_enabled: bannerEnabled,
           rmx_auto_sync: autoSyncEnabled
         }, () => {
@@ -246,13 +248,24 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // --- Restore previously saved cards (if user returns to onboarding) ---
-  chrome.storage.local.get(['rmx_user_cards', 'rmx_banner_enabled', 'rmx_auto_sync'], (result) => {
+  chrome.storage.local.get([
+    'rmx_selected_portals',
+    'rmx_user_cards',
+    'rmx_banner_enabled',
+    'rmx_auto_sync'
+  ], (result) => {
     if (chrome.runtime.lastError) {
       debug.error('[RMX-Onboarding] Error loading saved state:', chrome.runtime.lastError);
       return;
     }
 
-    const savedCards = result.rmx_user_cards;
+    const savedCards = typeof OfferUtils !== 'undefined'
+      ? OfferUtils.normalizePortalIds(
+        Array.isArray(result.rmx_selected_portals)
+          ? result.rmx_selected_portals
+          : result.rmx_user_cards
+      )
+      : [];
     if (savedCards && savedCards.length > 0) {
       debug.log('[RMX-Onboarding] Restoring saved cards:', savedCards);
 

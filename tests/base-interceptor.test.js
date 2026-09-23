@@ -81,6 +81,11 @@ describe('BaseInterceptor', () => {
       expect(result.timestamp).toBeDefined();
     });
 
+    test('returns null for malformed raw data', () => {
+      expect(BaseInterceptor.normalizeOffer(null, 'chase')).toBeNull();
+      expect(BaseInterceptor.normalizeOffer([], 'chase')).toBeNull();
+    });
+
     test('preserves minSpend/maxReward of 0', () => {
       const result = BaseInterceptor.normalizeOffer({
         merchant: 'Store', value: '5%', minSpend: 0, maxReward: 0

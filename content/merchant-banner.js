@@ -50,7 +50,7 @@ async function init() {
 async function checkForOffers() {
   try {
     const response = await chrome.runtime.sendMessage({ action: 'get_offers' });
-    const allOffers = response.offers || [];
+    const allOffers = Array.isArray(response?.offers) ? response.offers : [];
 
     if (allOffers.length === 0) {
       debug.log('[RMX-Banner] No offers in storage');
@@ -71,8 +71,9 @@ async function checkForOffers() {
     const normalizedSite = merchantName.replace(/[^a-z0-9]/g, '');
 
     currentOffers = allOffers.filter(offer => {
-      if (!offer || !offer.merchant) return false; // skip malformed offers (no merchant to match)
-      const offerMerchant = offer.merchant.toLowerCase();
+      if (typeof OfferUtils !== 'undefined' && !OfferUtils.isValidOffer(offer)) return false;
+      if (!offer || typeof offer.merchant !== 'string' || !offer.merchant.trim()) return false;
+      const offerMerchant = offer.merchant.trim().toLowerCase();
       const normalizedOffer = offerMerchant.replace(/[^a-z0-9]/g, '');
 
       // Exact match after normalization (always allowed)
@@ -96,6 +97,8 @@ async function checkForOffers() {
       chrome.runtime.sendMessage({
         action: 'update_badge',
         count: currentOffers.length
+      }).catch(error => {
+        debug.warn('[RMX-Banner] Failed to update badge:', error);
       });
     } else {
       debug.log('[RMX-Banner] No matching offers found');
@@ -144,7 +147,7 @@ function showBanner() {
 
   // Slide in animation
   setTimeout(() => {
-    bannerElement.classList.add('rmx-visible');
+    if (bannerElement) bannerElement.classList.add('rmx-visible');
   }, 300);
 
   debug.log('[RMX-Banner] Banner displayed');
@@ -171,22 +174,27 @@ function getSourceColor(source) {
 function createBannerHTML(cardOffer, stackingOffer) {
   const sourceName = getSourceDisplayName(cardOffer?.source);
   const sourceColor = getSourceColor(cardOffer?.source);
+  const escapeHtml = value => typeof OfferUtils !== 'undefined'
+    ? OfferUtils.escapeHtml(value)
+    : String(value ?? '').replace(/[&<>"']/g, character => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    }[character]));
 
   let mainMessage = '';
   if (cardOffer) {
-    mainMessage = `Use your <strong style="color:${sourceColor}">${sourceName}</strong> card for <strong style="color:#34d399">${cardOffer.value}</strong>`;
+    mainMessage = `Use your <strong style="color:${sourceColor}">${escapeHtml(sourceName)}</strong> card for <strong style="color:#34d399">${escapeHtml(cardOffer.value)}</strong>`;
   } else if (stackingOffer) {
     // Stacking-only (e.g. Rakuten cashback with no card offer): lead with the cashback
     const onlyName = getSourceDisplayName(stackingOffer.source);
     const onlyColor = getSourceColor(stackingOffer.source);
-    mainMessage = `Earn <strong style="color:#34d399">${stackingOffer.value}</strong> cashback via <strong style="color:${onlyColor}">${onlyName}</strong>`;
+    mainMessage = `Earn <strong style="color:#34d399">${escapeHtml(stackingOffer.value)}</strong> cashback via <strong style="color:${onlyColor}">${escapeHtml(onlyName)}</strong>`;
   }
 
   let stackingMessage = '';
   if (cardOffer && stackingOffer) {
     const stackingName = getSourceDisplayName(stackingOffer.source);
     const stackingColor = getSourceColor(stackingOffer.source);
-    stackingMessage = `<div class="rmx-stacking">Stack with <span style="color:${stackingColor}">${stackingName}</span> for <span style="color:#34d399">${stackingOffer.value}</span> extra cashback</div>`;
+    stackingMessage = `<div class="rmx-stacking">Stack with <span style="color:${stackingColor}">${escapeHtml(stackingName)}</span> for <span style="color:#34d399">${escapeHtml(stackingOffer.value)}</span> extra cashback</div>`;
   }
   // Referral prompt shows whenever a Rakuten offer is present (card offer or not)
   if (stackingOffer && stackingOffer.source === 'rakuten') {
@@ -242,10 +250,11 @@ function getCardName(source) {
 // Dismiss banner
 function dismissBanner() {
   if (bannerElement) {
+    const elementToRemove = bannerElement;
     bannerElement.classList.remove('rmx-visible');
     setTimeout(() => {
-      bannerElement.remove();
-      bannerElement = null;
+      elementToRemove.remove();
+      if (bannerElement === elementToRemove) bannerElement = null;
     }, 300);
     dismissSite();
   }
@@ -261,7 +270,7 @@ function openPopup() {
     // Create tooltip
     const tooltip = document.createElement('div');
     tooltip.className = 'rmx-tooltip';
-    tooltip.innerHTML = '👆 Click the Reward Maximizer extension icon to see all offer details';
+    tooltip.textContent = '👆 Click the Reward Maximizer extension icon to see all offer details';
     bannerElement.appendChild(tooltip);
 
     // Pulse the button

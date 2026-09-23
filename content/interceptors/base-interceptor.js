@@ -164,6 +164,8 @@ const BaseInterceptor = {
    * Normalize raw API offer data into the standard extension format.
    */
   normalizeOffer(raw, source) {
+    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
+
     const merchant = this.sanitize(raw.merchant || 'Unknown');
     const value = this.sanitize(raw.value || 'See details');
     const expiry = this.sanitize(raw.expiry || 'Check portal');

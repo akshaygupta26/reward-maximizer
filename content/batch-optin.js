@@ -180,10 +180,11 @@ const BatchOptIn = {
    */
   reportProgress(data) {
     try {
-      chrome.runtime.sendMessage({
+      const result = chrome.runtime.sendMessage({
         action: 'batch_progress',
         ...data
       });
+      if (result && typeof result.catch === 'function') result.catch(() => {});
     } catch (e) {
       // Popup might be closed, that's fine
     }
