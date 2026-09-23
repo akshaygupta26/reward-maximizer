@@ -10,7 +10,7 @@
 
 **Reward Maximizer** is a Chrome extension (Manifest v3) that helps users maximize credit card rewards by syncing, comparing, and stacking offers across multiple credit card portals and cashback platforms.
 
-**Version:** 2.1.0 | **Tech Stack:** Vanilla JS, Chrome Extension APIs, Chrome Storage API
+**Version:** 2.3.0 | **Tech Stack:** Vanilla JS, Chrome Extension APIs, Chrome Storage API
 
 **Core Features:** Scrapes offers from 7 bank portals (Amex, Chase, Citi, Capital One, Discover, BofA, US Bank) + 3 cashback platforms (Rakuten, Capital One Shopping, TopCashback). Compares values using point valuations, identifies stacking opportunities, shows merchant banners, and provides a centralized dashboard. Includes Rakuten referral links and Buy Me a Coffee tip jar for monetization.
 
