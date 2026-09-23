@@ -50,6 +50,16 @@
     },
     {
       "matches": [
+        "https://*.americanexpress.com/*"
+      ],
+      "js": [
+        "content/amex-api-interceptor.js"
+      ],
+      "run_at": "document_start",
+      "world": "MAIN"
+    },
+    {
+      "matches": [
         "https://*.chase.com/*"
       ],
       "js": [

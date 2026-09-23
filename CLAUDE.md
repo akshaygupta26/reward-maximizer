@@ -25,6 +25,7 @@ Reward Maximizer/
 ├── content/
 │   ├── content-main.js                # Hybrid extraction orchestrator (interceptor + scraper)
 │   ├── chase-api-interceptor.js       # MAIN world script: fetch/XHR capture + replay for Chase API discovery
+│   ├── amex-api-interceptor.js        # MAIN world script: fetch/XHR capture + replay for Amex multi-card activation
 │   ├── batch-optin.js                 # Fast sequential offer activation with MutationObserver + progress reporting
 │   ├── merchant-banner.js             # Offer alerts on merchant websites
 │   ├── utils.js
@@ -118,6 +119,9 @@ Default in `data/defaults.js`: amex-mr: 1.8, chase-ur: 1.5, citi-typ: 1.4, capit
 ### Chase Self-Discovering API Activation
 Chase scraper uses a separate MAIN world script (`content/chase-api-interceptor.js`, registered via manifest `"world": "MAIN"`) for self-discovering activation. Flow: ping interceptor → start capture → click ONE offer → capture POST/PUT requests → analyze for activation API (URL, headers, body template, offer ID field) → stop capture → navigate back → replay template for all remaining offers in batches of 5 via `window.postMessage`. Falls back to optimized `history.back()` click-and-navigate if discovery fails. Communication channel: `rmx-chase-api`.
 
+### Amex Multi-Card API Activation
+`AmexInterceptor.activateAll()` expands offers into one task per (offerId, eligible card token), then discovers the activation API via a separate MAIN world bridge (`content/amex-api-interceptor.js`, channel `rmx-amex-api`, capture + replay only). Flow: ping bridge → start capture → click ONE un-added `merchantOfferListAddButton` → find the captured request that matches an activation pattern (no leading slash, e.g. `...OfferEnrollment.v1`) AND contains a known offerId → substitute `{OFFER_ID}`/`{CARD_TOKEN}` by value → replay for every remaining task in batches of 5, with `requestId` disambiguating results. The discovery click counts as done. If the request carries no card token, replay is one-per-offer (selected card only). Falls back to DOM `BatchOptIn` (selected card only) if discovery fails. All waits live in `AmexInterceptor._discoveryTimeouts`.
+
 ### Scraper Pattern (Fallback)
 Each scraper implements: `source`, `offersUrl`, `needsNavigation()`, `scrape()`, `collectOffers()`, `extractMerchant()`, `extractValue()`. All `scrape()` methods wrapped in try-catch returning `{ offers: [], added: 0, totalFound: 0 }` on failure.
 
@@ -159,10 +163,10 @@ Each scraper implements: `source`, `offersUrl`, `needsNavigation()`, `scrape()`,
 
 ## Testing
 
-**Unit tests:** 217 tests across 14 suites (Jest) — `npm test` (all passing)
+**Unit tests:** 234 tests across 15 suites (Jest) — `npm test` (all passing)
 - `tests/valuation.test.js` (28), `tests/categories.test.js` (16), `tests/storage.test.js` (15), `tests/merchant-matching.test.js` (18)
 - `tests/extractor-config.test.js` (11), `tests/base-interceptor.test.js` (15), `tests/interceptor-health.test.js` (8)
-- `tests/chase-interceptor.test.js` (10), `tests/amex-interceptor.test.js` (8), `tests/interceptor-fallback.test.js` (14)
+- `tests/chase-interceptor.test.js` (10), `tests/amex-interceptor.test.js` (20), `tests/amex-main-bridge.test.js` (5), `tests/interceptor-fallback.test.js` (14)
 
 **Manual testing:** See `TESTING_CHECKLIST.md`
 
@@ -198,10 +202,11 @@ Each scraper implements: `source`, `offersUrl`, `needsNavigation()`, `scrape()`,
 - **Live scraping tests** — Test scrapers on actual bank portals (requires login). Amex, Chase, Citi, BofA, etc.
 - **Banner dismiss persistence** — ✅ DONE (verified 2026-09-22): dismiss state already uses `sessionStorage` (`rmx_banner_dismissed`), survives SPA nav + page reloads within the tab session; SPA MutationObserver preserves dismiss on URL change.
 - **Live API endpoint discovery (other portals)** — Interceptors use heuristic URL patterns and field names. Log into each portal with `ExtractorConfig.logRawResponses = true` to discover actual API shapes.
-- **Amex multi-card activation** — `AmexInterceptor.activateAll()` is a skeleton. Implement once activation endpoint is discovered.
+- **Amex multi-card activation** — ✅ DONE (2026-09-23): `AmexInterceptor.activateAll()` discovers the activation request from one real DOM click via the new MAIN-world bridge and replays it per (offer, card); DOM BatchOptIn fallback. Needs a live Amex login to confirm the real endpoint shape.
 - **Chase post-opt-in auto-populate** — After opt-in completes, offers should auto-save without requiring a second manual sync.
 
 ### Recent Updates
+- **Amex multi-card activation via discovery-based API (2026-09-23, hema/amex-multicard):** New MAIN-world bridge `content/amex-api-interceptor.js` (manifest `"world": "MAIN"` on `https://*.americanexpress.com/*`, channel `rmx-amex-api`) that only does capture + replay: patches fetch/XHR to record POST/PUT/PATCH (plus activation-pattern GETs) while capturing, and replays templates on command. No response observation, beacons, or offer caching. `AmexInterceptor.activateAll()` replaces the skeleton. It builds one task per (offerId, eligible card token), skipping `activated`/`enrolled`. Discovery pings the bridge and captures ONE real DOM activation. It then correlates offerId/cardToken values in the captured URL/body (activation patterns without leading slash, so `CreateCardAccountOfferEnrollment.v1`-style endpoints match), placeholder-substitutes `{OFFER_ID}`/`{CARD_TOKEN}`, and drops hop-by-hop headers. Replay is batched (5/batch, ~500ms pause), and each `replay_request` carries a `requestId` that the bridge echoes, because the same offerId appears once per card in a batch. The discovery click counts as done and is never replayed. If the captured request has no card token, replay collapses to one per offer. If discovery fails, it falls back to DOM `BatchOptIn` (currently-selected card only). Replay URLs are guarded to `https://*.americanexpress.com` before `fetch` is called. Privacy: 100% local, no telemetry or third-party calls, and card tokens/request bodies are never logged (debug logs show counts and the placeholder template path only). All waits are settable via `AmexInterceptor._discoveryTimeouts`. Tests: 234/234 passing across 15 suites (new `tests/amex-main-bridge.test.js`, extended `tests/amex-interceptor.test.js`).
 - **Landing page rebuild for v2.3.0 launch (2026-09-23, hema/landing-page):**
   - Rebuilt `website/index.html` as the marketing landing page for the v2.3.0 Chrome Web Store launch. Sections: hero with live-store CTA, supported bank/portal strip (7 banks + Rakuten), three-step how-it-works, six-feature grid, privacy-by-architecture section with per-permission explanations (`storage`, `tabs`, `notifications`, `alarms`, site access), honest monetization disclosure (labeled Rakuten referral links, optional Buy Me a Coffee), v2.3.0 changelog, FAQ, final CTA.
   - Fully self-contained single HTML file: no JavaScript, web fonts, external CSS/images, analytics, or trackers. Includes a CSS-only illustrative mock of the merchant alert with a labeled referral disclosure. Links: `privacy.html`, `terms.html`, GitHub, Chrome Web Store listing.
