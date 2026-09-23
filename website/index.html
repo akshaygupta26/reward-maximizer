@@ -1,291 +1,825 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Reward Maximizer - Maximize Your Credit Card Rewards</title>
-    <meta name="description" content="Chrome extension to sync and stack credit card offers for maximum rewards. Compare point values across cards and find the best deals.">
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src data:; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
+<title>Reward Maximizer — Stop leaving credit card rewards on the table</title>
+<meta name="description" content="Free Chrome extension that collects your credit card offers (Amex Offers, Chase Offers and more) into one dashboard, alerts you while you shop, and spots stacking with cashback portals like Rakuten. 100% local: your data never leaves your device.">
+<meta name="theme-color" content="#0b7a55">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Reward Maximizer — Stop leaving credit card rewards on the table">
+<meta property="og:description" content="Free, open-source Chrome extension. Sync your card offers into one place, get alerted while you shop, and stack with cashback portals. Your data never leaves your device.">
+<link rel="icon" type="image/png" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAACACAYAAADDPmHLAAAIYklEQVR4nO2c228UVRzHf9NMaWnoLlcr6pNUeFqaPvAP4ANqVS4KlGpia4QWNfFFY2mh3FooSAzeK4mUhLbcTPG2Ki/9B0jk0qcib1aSUhbYXe67Zn3YznZ2d+5zfnMucz7JpLs7l3PmfH/nd86Z36+jAGHmX9ibI31NySx31+xWSF7P98Wif+6RglMk+dIeXxp6Pjn6hxSeJZIvezME1ydJ4dnGrSG4Ojj6+24pPgckX9nrWFdHB0rh+cSJIdgeEI1L8Xkm2WRtBJY7o/EeKb4AJJv2mepsuiP6mxRfJJKvGhtBhdGPUnzxMNNUNTw6J/UPC2VuIfLrLqm+wKRe21+kedGXyC9S/DCQen3WCEqGAKl/2ChYQuTnnVL9EJFa26sAmKwCJOFBAQCI/NQte38ISa3rU6QHCDl5A8jJjcUtubYXtwwozAEYuFu5FW3Jdb0AADN/8SxAjYx25TRrkDAKkj6R0a6cEhntInb55Pq+uPY5er67idR1w0ZyfV/Zb9Hz3ShlqTkCz/1TGw7ES3/TjCEy2iUNgQAkdDJCrgIYI7XhgKvf/VLhdx5h1PtLKh5nYE7Fz2YFQnkVuDVGrLmAW+oN616e30+2TNWxhn4IooywQLgtfc8BIj/usJzk2e2X5Em9eZDocU5R0bN/ZHYReQi2qVJ79lNiV0tt7C9MCCPnOmXPd0hqY7/rcyLnOomUrdSeIWcAEvekNrkXXyNy1r8RqHKGxjP+tfP9HEBu3rfUpkNONDIltemQ7zqosv/zjV/9KiCXA7kFv6U3++v9GunNh3zVQ8YCQo6cA1DY0s2HnanjkHTzYc91CdUqIBmbcHxsdHwFYk0w8KajMm/4Y2EtILnSueB2PLo4Zrm/rmq7o+ukWz4jUR1Dakc+cX2OkAZAUvhS7AzBCKfGAWBtIF4EtgM/FhAgU08GoHrVatQyqletdm0EU4+/K/utbk6H+8IRtDL+93COmHoyUPiMLb6+HC+eQI++3p6MgRDB5AMgMJUZKPqOIf71oQtF3+vfXlNUnl8j0NCMoa7SxhAQtFJ5ywm/mfmedhXQyBv1EdP9GFpx9RzASnxSvdEpQZcHAChtysUc4GbWWa9/dHEskHkAFfGR4CMW4AJscaiKj9C2zMcCbv53zPU5jy6OoQglUs/X4HYV4IRSwdwMD0yKjaBVqGIBTIrqCvJaMb8KeErZSvymuQWhfZmfA0hw4SIWMDmRAQCA51ZUUq4JZRC0Yt4D/DUxG0jRDEFCDpUDB1BEkN4gaI8zOZGB5Rb7MbTidhUg0rDg3LOR14r55wCNL3TApb8HTPfrG48nY/A0nOF4AHEwalQWjILluQsXq4DG+nYAALh03X0o2KrxSRpHICKHPSOosb7dkxGYwXLPDArm5wB6ptXjUD2TlVOarSMCjcva4b7VAQhaKTXHPmTaBKbVwcJno2COCIbQuGwbtbKZ9QDTlYNF380iefo8PZ6MofF5negUNWBuDlAqvBv0xqDBglGUTjaXZNoo1aQcpWaAnSFgeo61+KTTvUgah9sVxZInbBgBkVfF+uVW1QlHx2Hn/GkeJIi8Ac3YFz9uRS/LCuaDQaUInfNHAeoJIU57vx6Rcv5uVZ2g2v7cBoMARMr5o6cBs8tAL7AlqgsoakB9DrD44Tu0q0AV2vfPRTBIRGra7sUBAB4AQM0371N7qyoTD4JESu6wQxNez4MPvo0D0DEE6quAy//8UKhM6KNzFNpfmftVB9Ux4PLkccPfRfQGRr2/7JivtwfqBZhNChVpWNDuxSrhUyNoPajPARqefReu/GvsBQBClvNHAa5WAbzn/F3rrGpa3v/YdBiY+2VH4JNA6h4AAKDhmXxk7MqNQdfnCpXzRwGl+mg7dRdw/8Ubhc8sxO+xaVjaBg8/Gih4grlfBN/zNZTqo9uoGUAiMmz6/F5EQ2hY2kq7CmUEHgtIRIcLn62CN/UCJX82PN2a/0Dd15YT2BxALzyA88gdrzl/BdEZB30VkJg/QuxarOb8NdQZBHQ4WV0p1Z9vRaupnfgs5/iVYreiWHS3Ba1sTFDmAIkFznq9SDl+mrEvusOXIaC/Klb//PvB4Lyy5Q62EQSdJMLbq3eVqiPvEa3x7YWnAMA68GFkCAD+h4TSIYDWU8KFt7dQKdcLTDwJ1BAnx48fUFYBdmHPmrZ7cTMvoIdbUTlZAQAg5AQuTDSTviRX8Hb/QmUFMwFn7VmBkWd0rbPK0r07cf+8MTmRmYkYUs6xc7kRzwm8mhgi0Jx8oQ8VX00M0dbU1Ya2CtC8gD4BArvn03ivH++gxwJKhwMWMnj8Yis8R6sApaq/jXhtr94Ztj8I+DIGp7195YK3kGtCFqpZwbzn+BnBUecHAABlzsFWtCqP3yUXCgZgO8cvNp+vIJAG6nOAWLQFxpPkjIDVSVcs2gKY7YgJeiwgFs33DJKGwAravfFMYP8XEIvkI2TjqVOBlIeJdi/cDfgGBB4NLDQe8GUM+nqLBNVYQKy2vFHH0/SNwqhevI7xdjD3jqBYrXk0bTx9OpByWGsTTLiKBsbmEQy1cnTfmFB/R5CELky8KVRCj4pMz0mFdiUkdMj0nFTyy0DpBELLzHMAaQFhRXqAkFMBAJDZMyTnASFD03z2UbBcDYSSwnOAzN5h6QVCgl7r4mCQdAKho6zXV/a0SDMQmMy+kSLNDd1+5S5pBCKS2T9SprdhPoBUPzyYTvzUnVukHQhEtveUodam0UCzEyT8YaWlrchqt/QEPJPts+7Ijnq52t0sjYBDsn2nbfV15ebVLmkIPJA9YC+8hquMIDcXltDBrUaeBVV3bJbegCGyB8940tJ3j5aGQBevwmsQd+lqpzQITLL9/gQv5X+X1WpmlyFlzwAAAABJRU5ErkJggg==">
+<style>
+:root {
+    --ink: #0f172a;
+    --body: #334155;
+    --muted: #475569;
+    --faint: #94a3b8;
+    --line: #e2e8f0;
+    --wash: #f3f8f6;
+    --brand: #0b7a55;
+    --brand-hover: #086446;
+    --brand-soft: #e2f4ec;
+    --mint: #34d399;
+    --gold: #f2b233;
+    --night: #0b1220;
+    --night-card: rgba(255, 255, 255, .05);
+    --night-line: rgba(255, 255, 255, .12);
+    --night-text: #cbd5e1;
+    --radius: 16px;
+    --shadow: 0 1px 2px rgba(15, 23, 42, .05), 0 8px 24px rgba(15, 23, 42, .06);
+    color-scheme: light;
+}
 
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            line-height: 1.6;
-            color: #333;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 20px;
-        }
+*, *::before, *::after { box-sizing: border-box; }
 
-        .container {
-            max-width: 1000px;
-            margin: 0 auto;
-        }
+/* Mobile nav is two rows (~100px tall); keep anchor targets clear of it. */
+html {
+    scroll-behavior: smooth;
+    scroll-padding-top: 116px;
+    -webkit-text-size-adjust: 100%;
+}
 
-        .header {
-            text-align: center;
-            color: white;
-            padding: 60px 20px;
-        }
+body {
+    margin: 0;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-size: 16px;
+    line-height: 1.6;
+    color: var(--body);
+    background: #fff;
+}
 
-        .logo {
-            font-size: 4em;
-            margin-bottom: 20px;
-        }
+h1, h2, h3 { margin: 0; color: var(--ink); line-height: 1.2; letter-spacing: -.01em; }
+p, ul, ol, dl, dd, figure { margin: 0; }
+ul, ol { padding: 0; }
+a { color: var(--brand); }
+code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: .9em;
+}
 
-        h1 {
-            font-size: 3em;
-            margin-bottom: 20px;
-            text-shadow: 0 2px 10px rgba(0,0,0,0.2);
-        }
+:focus-visible { outline: 3px solid var(--brand); outline-offset: 3px; border-radius: 6px; }
 
-        .tagline {
-            font-size: 1.3em;
-            opacity: 0.95;
-            margin-bottom: 40px;
-        }
+.wrap { width: 100%; max-width: 1120px; margin: 0 auto; padding: 0 20px; }
 
-        .cta-button {
-            display: inline-block;
-            background: white;
-            color: #667eea;
-            padding: 18px 40px;
-            font-size: 1.2em;
-            font-weight: 600;
-            border-radius: 50px;
-            text-decoration: none;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
-            transition: transform 0.2s, box-shadow 0.2s;
-        }
+.skip {
+    position: absolute; left: 12px; top: -60px; z-index: 200;
+    background: var(--ink); color: #fff; padding: 10px 16px; border-radius: 8px;
+    font-weight: 700; text-decoration: none;
+}
+.skip:focus { top: 12px; }
 
-        .cta-button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 30px rgba(0,0,0,0.3);
-        }
+.logo {
+    flex: none;
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    background: url("data:image/png;base64,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") center / cover no-repeat;
+}
 
-        .coming-soon {
-            background: rgba(255,255,255,0.2);
-            color: white;
-            padding: 10px 20px;
-            border-radius: 20px;
-            font-size: 0.9em;
-            margin-top: 20px;
-            display: inline-block;
-        }
+/* ---------- Buttons ---------- */
+.btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-height: 48px; padding: 12px 24px;
+    border: 2px solid transparent; border-radius: 999px;
+    font-weight: 700; font-size: 1rem; line-height: 1.2; text-align: center;
+    text-decoration: none;
+    transition: background-color .15s, border-color .15s, color .15s, transform .15s;
+}
+.btn-primary { background: var(--brand); color: #fff; box-shadow: 0 8px 20px -8px rgba(11, 122, 85, .6); }
+.btn-primary:hover { background: var(--brand-hover); transform: translateY(-1px); }
+.btn-secondary { background: #fff; color: var(--ink); border-color: #cbd5e1; }
+.btn-secondary:hover { border-color: var(--brand); color: var(--brand); }
+.btn-sm { min-height: 40px; padding: 8px 16px; font-size: .92rem; box-shadow: none; }
+.btn-light { background: #fff; color: var(--brand); }
+.btn-light:hover { background: #f0fdf7; transform: translateY(-1px); }
 
-        .content {
-            background: white;
-            border-radius: 12px;
-            padding: 60px 40px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
-            margin-top: -50px;
-        }
+/* ---------- Nav ---------- */
+.nav {
+    position: sticky; top: 0; z-index: 100;
+    background: rgba(255, 255, 255, .95);
+    -webkit-backdrop-filter: saturate(1.4) blur(10px);
+    backdrop-filter: saturate(1.4) blur(10px);
+    border-bottom: 1px solid var(--line);
+}
+.nav-inner {
+    display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
+    gap: 4px 12px;
+    padding: 10px 16px 6px;
+}
+.brand {
+    order: 1;
+    display: inline-flex; align-items: center; gap: 10px;
+    color: var(--ink); text-decoration: none;
+    font-weight: 800; font-size: 1rem; letter-spacing: -.01em;
+}
+.nav-cta { order: 2; padding: 8px 14px; }
+.nav-links {
+    order: 3;
+    flex: 1 0 100%;
+    display: flex; justify-content: center; gap: 4px;
+    list-style: none;
+}
+.nav-links a {
+    display: block; padding: 6px 12px; border-radius: 8px;
+    color: var(--muted); text-decoration: none; font-weight: 600; font-size: .95rem;
+}
+.nav-links a:hover { color: var(--ink); background: var(--wash); }
 
-        .features {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 30px;
-            margin: 40px 0;
-        }
+/* ---------- Shared section styles ---------- */
+.section { padding: 64px 0; }
+.kicker {
+    margin-bottom: 10px;
+    color: var(--brand); font-weight: 800; font-size: .78rem;
+    text-transform: uppercase; letter-spacing: .12em;
+}
+.h2 { font-size: clamp(1.7rem, 5.2vw, 2.4rem); letter-spacing: -.02em; }
+.lede { margin-top: 14px; max-width: 40rem; color: var(--muted); font-size: 1.08rem; }
 
-        .feature {
-            text-align: center;
-            padding: 20px;
-        }
+.ico {
+    display: grid; place-items: center;
+    width: 44px; height: 44px; border-radius: 12px;
+    background: var(--brand-soft); color: var(--brand);
+}
+.ico svg {
+    width: 22px; height: 22px;
+    fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;
+}
 
-        .feature-icon {
-            font-size: 3em;
-            margin-bottom: 15px;
-        }
+/* ---------- Hero ---------- */
+.hero {
+    padding: 40px 0 56px;
+    background:
+        radial-gradient(800px 420px at 100% 0%, #d4f1e3 0%, rgba(212, 241, 227, 0) 70%),
+        linear-gradient(180deg, #f4fbf8 0%, #fff 100%);
+    overflow: hidden;
+}
+.hero-grid { display: grid; gap: 44px; align-items: center; }
+.badge {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 6px 14px; border-radius: 999px;
+    background: #fff; border: 1px solid #bfe6d4; box-shadow: var(--shadow);
+    color: var(--brand); font-weight: 700; font-size: .85rem; text-decoration: none;
+}
+.badge:hover { border-color: var(--brand); }
+.badge-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: #10b981; box-shadow: 0 0 0 3px rgba(16, 185, 129, .22);
+}
+.hero h1 {
+    margin: 20px 0 16px;
+    font-size: clamp(2.15rem, 8vw, 3.65rem);
+    line-height: 1.07; letter-spacing: -.035em;
+}
+.hl { background: linear-gradient(transparent 62%, rgba(242, 178, 51, .45) 62%); }
+.hero-sub { max-width: 36rem; color: var(--muted); font-size: 1.12rem; }
+.hero-ctas { display: flex; flex-wrap: wrap; gap: 12px; margin: 28px 0 18px; }
+.hero-ctas .btn { flex: 1 1 100%; }
+.trust {
+    display: flex; flex-wrap: wrap; gap: 4px 10px;
+    list-style: none;
+    color: var(--muted); font-weight: 600; font-size: .93rem;
+}
+.trust li + li::before { content: "·"; margin-right: 10px; color: var(--faint); }
 
-        .feature h3 {
-            color: #667eea;
-            margin-bottom: 10px;
-            font-size: 1.3em;
-        }
+/* Illustrative browser mock with the merchant alert (CSS only) */
+.mock { margin: 0; }
+.mock-window {
+    position: relative;
+    background: #fff; border: 1px solid var(--line); border-radius: 14px;
+    box-shadow: 0 30px 60px -24px rgba(15, 23, 42, .3), 0 12px 24px -12px rgba(15, 23, 42, .12);
+    overflow: hidden;
+}
+.mock-bar {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 12px;
+    background: #f1f5f9; border-bottom: 1px solid var(--line);
+}
+.mock-dots { display: flex; gap: 6px; }
+.mock-dots i { width: 10px; height: 10px; border-radius: 50%; background: #f87171; }
+.mock-dots i:nth-child(2) { background: #fbbf24; }
+.mock-dots i:nth-child(3) { background: #34d399; }
+.mock-url {
+    flex: 1; min-width: 0;
+    padding: 3px 12px; border-radius: 999px;
+    background: #fff; border: 1px solid var(--line);
+    color: var(--muted); font-size: .78rem;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.mock-page { position: relative; padding: 16px 16px 56px; }
+.mock-store {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 18px; padding-bottom: 12px; border-bottom: 1px solid #f1f5f9;
+}
+.mock-storename { color: var(--ink); font-weight: 800; font-size: .72rem; letter-spacing: .14em; }
+.mock-menu { display: flex; gap: 8px; }
+.mock-menu i { width: 26px; height: 6px; border-radius: 3px; background: var(--line); }
+.mock-promo {
+    display: grid; align-content: center; gap: 10px;
+    height: 110px; margin-bottom: 16px; padding: 0 18px; border-radius: 12px;
+    background: linear-gradient(120deg, #e2f4ec, #f1f5f9);
+}
+.mock-promo i { display: block; height: 10px; border-radius: 5px; background: #fff; }
+.mock-promo i:first-child { width: 45%; height: 14px; }
+.mock-promo i:last-child { width: 30%; }
+.mock-product { display: grid; grid-template-columns: 44% 1fr; gap: 16px; }
+.mock-img {
+    height: 150px; border-radius: 12px;
+    background:
+        radial-gradient(circle at 50% 58%, rgba(255, 255, 255, .55) 0 26%, transparent 27%),
+        linear-gradient(135deg, #fde68a, #f59e0b);
+}
+.mock-lines i { display: block; height: 8px; margin-bottom: 10px; border-radius: 4px; background: var(--line); }
+.mock-lines i:nth-child(1) { width: 90%; height: 10px; background: #cbd5e1; }
+.mock-lines i:nth-child(2) { width: 70%; }
+.mock-lines i:nth-child(3) { width: 80%; }
+.mock-price { margin: 4px 0 10px; color: var(--ink); font-weight: 800; font-size: .95rem; }
+.mock-buy {
+    display: inline-block; padding: 6px 12px; border-radius: 8px;
+    background: var(--ink); color: #fff; font-weight: 700; font-size: .72rem;
+}
+.mock-tag {
+    position: absolute; left: 12px; bottom: 12px;
+    padding: 4px 10px; border-radius: 999px;
+    background: rgba(15, 23, 42, .8); color: #fff;
+    font-size: .68rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase;
+}
+.alert {
+    position: absolute; top: 12px; right: 12px;
+    width: min(330px, calc(100% - 24px));
+    display: flex; gap: 12px; align-items: flex-start;
+    padding: 14px 14px 14px 12px;
+    border-radius: 16px;
+    background: rgba(15, 23, 42, .95);
+    border: 1px solid rgba(255, 255, 255, .08);
+    box-shadow: 0 20px 40px -12px rgba(15, 23, 42, .55);
+    color: #f8fafc; font-size: .84rem; line-height: 1.4;
+}
+.alert-ico {
+    flex: none; display: grid; place-items: center;
+    width: 36px; height: 36px; border-radius: 50%;
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    font-size: 17px; line-height: 1;
+}
+.alert-body { flex: 1; min-width: 0; padding-right: 26px; }
+.alert-title strong { font-weight: 700; }
+.c-card { color: #60a5fa; }
+.c-val { color: #34d399; }
+.c-portal { color: #fca5a5; }
+.alert-stack { margin-top: 4px; color: var(--night-text); font-size: .78rem; }
+.alert-ref {
+    margin-top: 8px; padding-top: 8px;
+    border-top: 1px solid rgba(255, 255, 255, .1);
+    color: var(--night-text); font-size: .74rem;
+}
+.alert-ref b { color: #34d399; font-weight: 700; }
+.alert-disc { display: block; margin-top: 2px; color: var(--faint); font-size: .7rem; }
+.alert-btn {
+    display: inline-block; margin-top: 10px; padding: 5px 14px; border-radius: 8px;
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    font-weight: 700; font-size: .74rem;
+}
+.alert-x {
+    position: absolute; top: 10px; right: 10px;
+    display: grid; place-items: center;
+    width: 24px; height: 24px; border-radius: 50%;
+    background: rgba(255, 255, 255, .1); color: #f8fafc; font-size: 15px; line-height: 1;
+}
+.mock-cap { margin-top: 14px; color: var(--muted); font-size: .88rem; text-align: center; }
+.mock-cap strong { color: var(--ink); }
 
-        .feature p {
-            color: #666;
-        }
+/* ---------- Bank strip ---------- */
+.banks { padding: 44px 0 8px; text-align: center; }
+.banks-h {
+    margin-bottom: 20px;
+    color: var(--muted); font-size: .82rem; font-weight: 800;
+    text-transform: uppercase; letter-spacing: .12em;
+}
+.bank-list { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; list-style: none; }
+.bank {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 8px 16px; border-radius: 999px;
+    background: #fff; border: 1px solid var(--line); box-shadow: var(--shadow);
+    color: var(--ink); font-weight: 700; font-size: .92rem;
+}
+.dot { width: 10px; height: 10px; border-radius: 50%; }
+.d-amex { background: #2e77bb; }
+.d-chase { background: #117aca; }
+.d-citi { background: #056dae; }
+.d-capone { background: #d03027; }
+.d-discover { background: #ff6000; }
+.d-bofa { background: #e31837; }
+.d-usbank { background: #0c2074; }
+.d-rakuten { background: #bf0000; }
+.bank-tag {
+    padding: 1px 8px; border-radius: 999px;
+    background: var(--brand-soft); color: var(--brand);
+    font-size: .7rem; font-weight: 800; text-transform: uppercase; letter-spacing: .06em;
+}
 
-        .supported-cards {
-            background: #f8fafc;
-            border-radius: 8px;
-            padding: 30px;
-            margin: 40px 0;
-        }
+/* ---------- How it works ---------- */
+.steps { display: grid; gap: 16px; margin-top: 36px; list-style: none; counter-reset: step; }
+.step {
+    position: relative;
+    padding: 28px 24px;
+    background: #fff; border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow);
+}
+.step-n {
+    display: grid; place-items: center;
+    width: 40px; height: 40px; margin-bottom: 16px; border-radius: 50%;
+    background: var(--brand); color: #fff; font-weight: 800; font-size: 1.1rem;
+}
+.step h3 { margin-bottom: 8px; font-size: 1.15rem; }
+.step p { color: var(--muted); }
 
-        .supported-cards h2 {
-            text-align: center;
-            color: #667eea;
-            margin-bottom: 20px;
-        }
+/* ---------- Features ---------- */
+.features-section { background: var(--wash); }
+.features { display: grid; gap: 16px; margin-top: 36px; list-style: none; }
+.feature {
+    padding: 26px 24px;
+    background: #fff; border: 1px solid var(--line); border-radius: var(--radius);
+}
+.feature h3 { margin: 16px 0 6px; font-size: 1.1rem; }
+.feature p { color: var(--muted); font-size: .97rem; }
 
-        .card-list {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 15px;
-            justify-content: center;
-        }
+/* ---------- Privacy (dark) ---------- */
+.dark {
+    background:
+        radial-gradient(700px 380px at 0% 0%, rgba(52, 211, 153, .12), transparent 70%),
+        var(--night);
+    color: var(--night-text);
+}
+.dark .kicker { color: var(--mint); }
+.dark .h2, .dark h3 { color: #fff; }
+.dark .lede { color: var(--night-text); }
+.dark a { color: var(--mint); }
+.dark :focus-visible { outline-color: var(--mint); }
+.dark code { color: #a7f3d0; }
+.pillars { display: grid; gap: 14px; margin-top: 36px; list-style: none; }
+.pillar {
+    padding: 22px 22px;
+    background: var(--night-card); border: 1px solid var(--night-line); border-radius: var(--radius);
+}
+.pillar .ico { background: rgba(52, 211, 153, .14); color: var(--mint); }
+.pillar h3 { margin: 14px 0 6px; font-size: 1.08rem; }
+.pillar p { font-size: .96rem; }
+.perms {
+    margin-top: 22px; padding: 26px 22px;
+    background: var(--night-card); border: 1px solid var(--night-line); border-radius: var(--radius);
+}
+.perms > h3 { font-size: 1.2rem; }
+.perms > p { margin-top: 6px; color: var(--faint); }
+.perm-list { display: grid; gap: 0; margin-top: 18px; }
+.perm-list > div { padding: 14px 0; border-top: 1px solid var(--night-line); }
+.perm-list dt { color: #fff; font-weight: 700; }
+.perm-list dt code {
+    padding: 2px 8px; border-radius: 6px;
+    background: rgba(52, 211, 153, .12); color: #a7f3d0;
+}
+.perm-list dd { margin-top: 6px; font-size: .97rem; }
 
-        .card-badge {
-            background: white;
-            padding: 10px 20px;
-            border-radius: 20px;
-            border: 2px solid #e2e8f0;
-            font-weight: 500;
-            color: #64748b;
-        }
+/* ---------- Monetization + changelog ---------- */
+.duo { display: grid; gap: 20px; }
+.money {
+    padding: 32px 24px;
+    background: #fffbeb; border: 1px solid #fde68a; border-radius: 20px;
+}
+.money .kicker { color: #92400e; }
+.money > p { margin-top: 12px; color: var(--muted); }
+.money-list { display: grid; gap: 14px; margin-top: 18px; list-style: none; }
+.money-list li {
+    padding: 16px 18px;
+    background: #fff; border: 1px solid #fde68a; border-radius: 12px;
+}
+.money-list strong, .money-never strong { color: var(--ink); }
+.money-list p { margin-top: 4px; color: var(--muted); font-size: .97rem; }
+.money > .money-never { margin-top: 18px; color: var(--body); }
+.changelog {
+    padding: 32px 24px;
+    background: #fff; border: 1px solid var(--line); border-radius: 20px; box-shadow: var(--shadow);
+}
+.changelog .h2 { font-size: clamp(1.4rem, 4.4vw, 1.75rem); }
+.checks { display: grid; gap: 12px; margin: 20px 0 22px; list-style: none; }
+.checks li { display: flex; gap: 12px; align-items: flex-start; }
+.checks svg {
+    flex: none; width: 22px; height: 22px; margin-top: 1px; padding: 4px;
+    border-radius: 50%; background: var(--brand-soft);
+    fill: none; stroke: var(--brand); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round;
+}
+.arrow-link { font-weight: 700; text-decoration: none; }
+.arrow-link:hover { text-decoration: underline; }
 
-        .footer {
-            margin-top: 40px;
-            padding: 30px 0;
-            text-align: center;
-            color: white;
-        }
+/* ---------- FAQ ---------- */
+.faq-grid { display: grid; gap: 28px; }
+.faq-list { display: grid; gap: 12px; }
+.faq-list details {
+    background: #fff; border: 1px solid var(--line); border-radius: 14px;
+    transition: border-color .15s, box-shadow .15s;
+}
+.faq-list details[open] { border-color: #a7dcc4; box-shadow: var(--shadow); }
+.faq-list summary {
+    display: flex; align-items: center; justify-content: space-between; gap: 16px;
+    padding: 18px 20px;
+    color: var(--ink); font-weight: 700; cursor: pointer; list-style: none;
+}
+.faq-list summary::-webkit-details-marker { display: none; }
+.faq-list summary::after {
+    content: "+";
+    flex: none; display: grid; place-items: center;
+    width: 28px; height: 28px; border-radius: 50%;
+    background: var(--brand-soft); color: var(--brand);
+    font-size: 1.3rem; font-weight: 700; line-height: 1;
+    transition: transform .2s;
+}
+.faq-list details[open] summary::after { transform: rotate(45deg); }
+.faq-list summary:focus-visible { outline-offset: -3px; border-radius: 14px; }
+.faq-a { padding: 0 20px 20px; color: var(--muted); }
 
-        .footer-links {
-            display: flex;
-            gap: 30px;
-            justify-content: center;
-            margin-bottom: 20px;
-            flex-wrap: wrap;
-        }
+/* ---------- Final CTA + footer ---------- */
+.cta {
+    padding: 48px 24px;
+    border-radius: 24px;
+    background:
+        radial-gradient(500px 260px at 100% 0%, rgba(242, 178, 51, .2), transparent 70%),
+        linear-gradient(135deg, #0b7a55 0%, #075a40 100%);
+    color: #fff; text-align: center;
+}
+.cta h2 { color: #fff; font-size: clamp(1.7rem, 5.4vw, 2.5rem); letter-spacing: -.02em; }
+.cta p { max-width: 34rem; margin: 12px auto 26px; font-size: 1.08rem; }
+.cta :focus-visible { outline-color: #fff; }
 
-        .footer-links a {
-            color: white;
-            text-decoration: none;
-            font-weight: 500;
-            transition: opacity 0.2s;
-        }
+.footer { padding: 40px 0 44px; border-top: 1px solid var(--line); color: var(--muted); font-size: .92rem; }
+.footer-top { display: grid; gap: 18px; justify-items: start; }
+.footer-links { display: flex; flex-wrap: wrap; gap: 8px 22px; list-style: none; }
+.footer-links a { color: var(--muted); font-weight: 600; text-decoration: none; }
+.footer-links a:hover { color: var(--brand); text-decoration: underline; }
+.copy { margin-top: 22px; }
+.disclaimer { margin-top: 10px; max-width: 48rem; color: #64748b; font-size: .84rem; }
 
-        .footer-links a:hover {
-            opacity: 0.8;
-        }
+/* ---------- Breakpoints (mobile-first) ---------- */
+@media (max-width: 359px) {
+    .brand { font-size: .95rem; gap: 8px; }
+    .nav-cta { padding: 8px 12px; }
+    .nav-links a { padding: 6px 8px; }
+}
 
-        .disclaimer {
-            background: rgba(255,255,255,0.1);
-            border-radius: 8px;
-            padding: 20px;
-            margin: 20px 0;
-            font-size: 0.9em;
-        }
+@media (min-width: 480px) {
+    .hero-ctas .btn { flex: 0 0 auto; }
+}
 
-        @media (max-width: 768px) {
-            h1 {
-                font-size: 2em;
-            }
+@media (min-width: 640px) {
+    .features { grid-template-columns: repeat(2, 1fr); }
+    .pillars { grid-template-columns: repeat(2, 1fr); }
+    .perm-list > div { display: grid; grid-template-columns: 11rem 1fr; gap: 16px; align-items: baseline; }
+    .perm-list dd { margin-top: 0; }
+    .footer-top { grid-template-columns: auto 1fr; align-items: center; }
+    .footer-links { justify-content: flex-end; }
+}
 
-            .tagline {
-                font-size: 1.1em;
-            }
+@media (min-width: 760px) {
+    html { scroll-padding-top: 84px; }
+    .nav-inner { flex-wrap: nowrap; padding: 12px 20px; }
+    .brand { font-size: 1.05rem; }
+    .nav-links { order: 2; flex: 0 1 auto; margin-left: auto; }
+    .nav-cta { order: 3; padding: 8px 16px; }
+    .section { padding: 88px 0; }
+    .steps { grid-template-columns: repeat(3, 1fr); gap: 20px; }
+    .perms { padding: 32px; }
+    .money, .changelog { padding: 40px; }
+    .cta { padding: 64px 40px; }
+}
 
-            .content {
-                padding: 40px 20px;
-            }
+@media (min-width: 960px) {
+    .hero { padding: 72px 0 88px; }
+    .hero-grid { grid-template-columns: 1.05fr 1fr; gap: 56px; }
+    .features { grid-template-columns: repeat(3, 1fr); gap: 20px; }
+    .pillars { grid-template-columns: repeat(4, 1fr); }
+    .duo { grid-template-columns: 1.35fr 1fr; gap: 24px; align-items: start; }
+    .faq-grid { grid-template-columns: 1fr 1.6fr; gap: 56px; align-items: start; }
+}
 
-            .features {
-                grid-template-columns: 1fr;
-            }
-        }
-    </style>
+@media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    *, *::before, *::after { transition: none !important; }
+}
+</style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <div class="logo">💳</div>
-            <h1>Reward Maximizer</h1>
-            <p class="tagline">Sync and stack credit card offers for maximum rewards</p>
-            <div class="coming-soon">📦 Coming Soon to Chrome Web Store</div>
+
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="nav">
+    <nav class="wrap nav-inner" aria-label="Main">
+        <a class="brand" href="#top"><span class="logo" aria-hidden="true"></span>Reward Maximizer</a>
+        <ul class="nav-links">
+            <li><a href="#how">How it works</a></li>
+            <li><a href="#privacy">Privacy</a></li>
+            <li><a href="#faq">FAQ</a></li>
+        </ul>
+        <a class="btn btn-primary btn-sm nav-cta" href="https://chromewebstore.google.com/detail/reward-maximizer/kimcpncokhjhcpandohmnkbjoagopkip">Add to Chrome</a>
+    </nav>
+</header>
+
+<main id="main">
+
+<!-- 1. Hero -->
+<section class="hero" aria-labelledby="hero-h">
+    <div class="wrap hero-grid">
+        <div>
+            <a class="badge" href="#whats-new"><span class="badge-dot" aria-hidden="true"></span>v2.3.0 — now live on the Chrome Web Store</a>
+            <h1 id="hero-h">Stop leaving <span class="hl">credit card rewards</span> on the table.</h1>
+            <p class="hero-sub">Reward Maximizer syncs all your card offers into one place, alerts you while you shop, and helps you stack them for maximum value. Your data never leaves your device.</p>
+            <div class="hero-ctas">
+                <a class="btn btn-primary" href="https://chromewebstore.google.com/detail/reward-maximizer/kimcpncokhjhcpandohmnkbjoagopkip">Add to Chrome — it's free</a>
+                <a class="btn btn-secondary" href="#how">See how it works</a>
+            </div>
+            <ul class="trust" aria-label="At a glance">
+                <li>Free forever</li>
+                <li>No account</li>
+                <li>Open source</li>
+            </ul>
         </div>
 
-        <div class="content">
-            <h2 style="text-align: center; color: #667eea; font-size: 2em; margin-bottom: 40px;">
-                Never Miss a Credit Card Offer Again
-            </h2>
-
-            <div class="features">
-                <div class="feature">
-                    <div class="feature-icon">🔄</div>
-                    <h3>Auto-Sync Offers</h3>
-                    <p>Automatically collect and organize offers from all your credit card portals in one place</p>
+        <figure class="mock">
+            <div class="mock-window" aria-hidden="true">
+                <div class="mock-bar">
+                    <span class="mock-dots"><i></i><i></i><i></i></span>
+                    <span class="mock-url">examplestore.com/product</span>
                 </div>
-                <div class="feature">
-                    <div class="feature-icon">📊</div>
-                    <h3>Compare Values</h3>
-                    <p>Instantly compare offers across cards using customizable point valuations</p>
-                </div>
-                <div class="feature">
-                    <div class="feature-icon">💡</div>
-                    <h3>Smart Stacking</h3>
-                    <p>Identify opportunities to stack card offers with cashback portals like Rakuten</p>
-                </div>
-                <div class="feature">
-                    <div class="feature-icon">🔔</div>
-                    <h3>Merchant Alerts</h3>
-                    <p>Get notified when you visit a merchant website with active offers</p>
-                </div>
-                <div class="feature">
-                    <div class="feature-icon">🔒</div>
-                    <h3>100% Private</h3>
-                    <p>All data stored locally on your device. No cloud servers, no tracking</p>
-                </div>
-                <div class="feature">
-                    <div class="feature-icon">📤</div>
-                    <h3>Export & Organize</h3>
-                    <p>Export your offers to CSV or JSON for analysis and tracking</p>
+                <div class="mock-page">
+                    <div class="mock-store">
+                        <span class="mock-storename">EXAMPLE STORE</span>
+                        <span class="mock-menu"><i></i><i></i><i></i></span>
+                    </div>
+                    <div class="mock-promo"><i></i><i></i></div>
+                    <div class="mock-product">
+                        <div class="mock-img"></div>
+                        <div class="mock-lines">
+                            <i></i><i></i><i></i>
+                            <p class="mock-price">$120.00</p>
+                            <span class="mock-buy">Add to cart</span>
+                        </div>
+                    </div>
+                    <div class="alert">
+                        <span class="alert-ico">💳</span>
+                        <div class="alert-body">
+                            <p class="alert-title">Use your <strong class="c-card">American Express</strong> card for <strong class="c-val">$20 back</strong></p>
+                            <p class="alert-stack">Stack with <span class="c-portal">Rakuten</span> for <span class="c-val">5%</span> extra cashback</p>
+                            <p class="alert-ref">Don't have Rakuten? <b>Sign up free →</b><span class="alert-disc">Referral link — we may earn a small bonus</span></p>
+                            <span class="alert-btn">Details</span>
+                        </div>
+                        <span class="alert-x">×</span>
+                    </div>
+                    <span class="mock-tag">Illustrative example</span>
                 </div>
             </div>
+            <figcaption class="mock-cap"><strong>Illustrative example</strong> of the in-page alert. The store and offers are made up; real alerts use the offers synced from your own cards.</figcaption>
+        </figure>
+    </div>
+</section>
 
-            <div class="supported-cards">
-                <h2>Supported Card Programs</h2>
-                <div class="card-list">
-                    <span class="card-badge">American Express</span>
-                    <span class="card-badge">Chase</span>
-                    <span class="card-badge">Citi</span>
-                    <span class="card-badge">Capital One</span>
-                    <span class="card-badge">Discover</span>
-                    <span class="card-badge">Bank of America</span>
-                    <span class="card-badge">US Bank</span>
-                    <span class="card-badge">Rakuten</span>
+<!-- 2. Bank strip -->
+<section class="banks" aria-labelledby="banks-h">
+    <div class="wrap">
+        <h2 id="banks-h" class="banks-h">Works with the cards you already have</h2>
+        <ul class="bank-list">
+            <li class="bank"><span class="dot d-amex" aria-hidden="true"></span>American Express</li>
+            <li class="bank"><span class="dot d-chase" aria-hidden="true"></span>Chase</li>
+            <li class="bank"><span class="dot d-citi" aria-hidden="true"></span>Citi</li>
+            <li class="bank"><span class="dot d-capone" aria-hidden="true"></span>Capital One</li>
+            <li class="bank"><span class="dot d-discover" aria-hidden="true"></span>Discover</li>
+            <li class="bank"><span class="dot d-bofa" aria-hidden="true"></span>Bank of America</li>
+            <li class="bank"><span class="dot d-usbank" aria-hidden="true"></span>US Bank</li>
+            <li class="bank"><span class="dot d-rakuten" aria-hidden="true"></span>Rakuten <span class="bank-tag">Cashback portal</span></li>
+        </ul>
+    </div>
+</section>
+
+<!-- 3. How it works -->
+<section class="section" id="how" aria-labelledby="how-h">
+    <div class="wrap">
+        <p class="kicker">How it works</p>
+        <h2 class="h2" id="how-h">Three steps. Then just shop.</h2>
+        <p class="lede">Card offers like Amex Offers and Chase Offers are scattered across banking sites, buried in menus, and easy to forget at checkout. Reward Maximizer brings them to where you actually spend.</p>
+        <ol class="steps">
+            <li class="step">
+                <span class="step-n" aria-hidden="true">1</span>
+                <h3>Install the extension</h3>
+                <p>Add it to Chrome from the Chrome Web Store. There's no account to create and nothing to sign up for.</p>
+            </li>
+            <li class="step">
+                <span class="step-n" aria-hidden="true">2</span>
+                <h3>Sync your offers from card portals</h3>
+                <p>Log in to your card's website as you normally would, then hit sync in the extension. Offers from every portal land in one dashboard.</p>
+            </li>
+            <li class="step">
+                <span class="step-n" aria-hidden="true">3</span>
+                <h3>Shop, get alerted, stack</h3>
+                <p>Visit a store with an active offer and an alert tells you which card to use, and whether a portal like Rakuten stacks on top, before you check out.</p>
+            </li>
+        </ol>
+    </div>
+</section>
+
+<!-- 4. Features -->
+<section class="section features-section" id="features" aria-labelledby="features-h">
+    <div class="wrap">
+        <p class="kicker">Features</p>
+        <h2 class="h2" id="features-h">Everything you need to use every offer</h2>
+        <ul class="features">
+            <li class="feature">
+                <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg></span>
+                <h3>Auto-sync offers</h3>
+                <p>Collect offers from all your card portals into one deduplicated dashboard, instead of checking half a dozen banking sites.</p>
+            </li>
+            <li class="feature">
+                <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></span>
+                <h3>Compare true values</h3>
+                <p>Dollars off, percent back, bonus points: offers come in different shapes. Point valuations put them on one scale so you can see which card actually wins.</p>
+            </li>
+            <li class="feature">
+                <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg></span>
+                <h3>Smart stacking with portals</h3>
+                <p>Spots when a card offer and a cashback portal like Rakuten both apply to the same store, so you can earn from both on one purchase.</p>
+            </li>
+            <li class="feature">
+                <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></span>
+                <h3>Merchant alerts</h3>
+                <p>A small alert appears when you visit a store's site with an active offer, so you find out before checkout, not after.</p>
+            </li>
+            <li class="feature">
+                <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></span>
+                <h3>Export CSV / JSON</h3>
+                <p>Download your offers as CSV or JSON for spreadsheets, budgeting tools, or your own records. It's your data.</p>
+            </li>
+            <li class="feature">
+                <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg></span>
+                <h3>Custom valuations</h3>
+                <p>Think your points are worth more (or less) than the defaults? Set your own value per point for each rewards program, and comparisons use your numbers.</p>
+            </li>
+        </ul>
+    </div>
+</section>
+
+<!-- 5. Privacy -->
+<section class="section dark" id="privacy" aria-labelledby="privacy-h">
+    <div class="wrap">
+        <p class="kicker">Privacy</p>
+        <h2 class="h2" id="privacy-h">Private by architecture, not by promise.</h2>
+        <p class="lede">Most tools ask you to trust their servers. Reward Maximizer doesn't have any. Everything it collects is stored in <code>chrome.storage.local</code>, in your browser, on your device.</p>
+
+        <ul class="pillars">
+            <li class="pillar">
+                <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>
+                <h3>No accounts</h3>
+                <p>Nothing to sign up for, no password to leak, no profile to breach.</p>
+            </li>
+            <li class="pillar">
+                <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/><line x1="3" y1="3" x2="21" y2="21"/></svg></span>
+                <h3>No analytics</h3>
+                <p>No tracking pixels, no telemetry, no usage stats. What you sync is nobody's business.</p>
+            </li>
+            <li class="pillar">
+                <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>
+                <h3>No cloud</h3>
+                <p>There's no Reward Maximizer server. Your offers, settings, and valuations stay on your device.</p>
+            </li>
+            <li class="pillar">
+                <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg></span>
+                <h3>Open source</h3>
+                <p>Every line is public on <a href="https://github.com/akshaygupta26/reward-maximizer">GitHub</a>. Verify, don't trust.</p>
+            </li>
+        </ul>
+
+        <div class="perms">
+            <h3>Every permission, explained</h3>
+            <p>What each permission the extension requests is actually used for.</p>
+            <dl class="perm-list">
+                <div>
+                    <dt><code>storage</code></dt>
+                    <dd>Keeps your synced offers, settings, and point valuations on your device.</dd>
                 </div>
-            </div>
-
-            <div style="text-align: center; margin: 40px 0;">
-                <h2 style="color: #667eea; margin-bottom: 20px;">How It Works</h2>
-                <ol style="text-align: left; max-width: 600px; margin: 0 auto; line-height: 2;">
-                    <li><strong>Install the extension</strong> from the Chrome Web Store</li>
-                    <li><strong>Visit your credit card portal</strong> (Amex, Chase, etc.)</li>
-                    <li><strong>Click the sync button</strong> in the extension popup</li>
-                    <li><strong>Shop online</strong> and get alerts when you visit merchant websites with offers</li>
-                    <li><strong>Maximize your rewards</strong> by using the best card for each purchase</li>
-                </ol>
-            </div>
-
-            <div class="disclaimer">
-                <p style="text-align: center;">
-                    ⚠️ <strong>Disclaimer:</strong> Reward Maximizer is not affiliated with, endorsed by, or sponsored by
-                    American Express, Chase, Citi, Capital One, Discover, Bank of America, US Bank, Rakuten,
-                    or any other financial institution. Use at your own risk.
-                </p>
-            </div>
-        </div>
-
-        <div class="footer">
-            <div class="footer-links">
-                <a href="privacy.html">Privacy Policy</a>
-                <a href="terms.html">Terms of Service</a>
-                <a href="mailto:rewardmaximizer@gmail.com">Contact Support</a>
-            </div>
-            <p>&copy; 2026 Reward Maximizer. All rights reserved.</p>
-            <p style="font-size: 0.9em; opacity: 0.8; margin-top: 10px;">
-                Made for credit card enthusiasts who love maximizing rewards
-            </p>
+                <div>
+                    <dt><code>tabs</code></dt>
+                    <dd>Notices when you land on a merchant site so it can flag matching offers, and opens your card portals when you start a sync.</dd>
+                </div>
+                <div>
+                    <dt><code>notifications</code></dt>
+                    <dd>Lets you know when a sync has finished.</dd>
+                </div>
+                <div>
+                    <dt><code>alarms</code></dt>
+                    <dd>Background sync housekeeping in the service worker, such as clearing sync progress after a sync completes.</dd>
+                </div>
+                <div>
+                    <dt>Site access</dt>
+                    <dd>Reads offer listings on the bank pages you open, and shows alerts while you shop. Stores can be anywhere on the web, which is why it asks for access to all sites. What it reads stays on your device.</dd>
+                </div>
+            </dl>
         </div>
     </div>
+</section>
+
+<!-- 6. Monetization + 7. Changelog -->
+<div class="section">
+    <div class="wrap duo">
+        <section class="money" id="free" aria-labelledby="free-h">
+            <p class="kicker">Honest monetization</p>
+            <h2 class="h2" id="free-h">How is it free?</h2>
+            <p>Fair question. The project brings in a little money in two ways, and both are disclosed:</p>
+            <ul class="money-list">
+                <li>
+                    <strong>Labeled referral links.</strong>
+                    <p>Some portal links in the extension, like the Rakuten sign-up link, are referral links. They're always labeled as referral links in the app, and you never have to use them.</p>
+                </li>
+                <li>
+                    <strong>An optional tip jar.</strong>
+                    <p>A Buy Me a Coffee link for anyone who wants to chip in. Every feature works without it.</p>
+                </li>
+            </ul>
+            <p class="money-never"><strong>Never:</strong> ads, a premium tier, or selling your data. There's no data to sell, because none of it ever leaves your device.</p>
+        </section>
+
+        <section class="changelog" id="whats-new" aria-labelledby="whats-new-h">
+            <p class="kicker">Changelog</p>
+            <h2 class="h2" id="whats-new-h">What's new in v2.3.0</h2>
+            <ul class="checks">
+                <li><svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>More reliable background syncing</li>
+                <li><svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>Hardened offer handling, for safer popups and banners</li>
+                <li><svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>Removed unused permissions</li>
+            </ul>
+            <a class="arrow-link" href="https://github.com/akshaygupta26/reward-maximizer/releases/tag/v2.3.0">Read the full release notes on GitHub →</a>
+        </section>
+    </div>
+</div>
+
+<!-- 8. FAQ -->
+<section class="section features-section" id="faq" aria-labelledby="faq-h">
+    <div class="wrap faq-grid">
+        <div>
+            <p class="kicker">FAQ</p>
+            <h2 class="h2" id="faq-h">Straight answers</h2>
+            <p class="lede">Something else on your mind? Email <a href="mailto:rewardmaximizer@gmail.com">rewardmaximizer@gmail.com</a>.</p>
+        </div>
+        <div class="faq-list">
+            <details>
+                <summary>Is it really free? What's the catch?</summary>
+                <p class="faq-a">Yes, it's free. There's no premium tier, no paywalled features, and no ads. The project is supported by referral links that are always labeled in the app (like Rakuten's) and an optional tip jar. The source code is public, so you can check for yourself that there's no catch.</p>
+            </details>
+            <details>
+                <summary>Does it see my banking passwords?</summary>
+                <p class="faq-a">No. You log in on your bank's own website as usual. The extension never asks for, sees, or stores your credentials. It only reads the offer listings on pages you open.</p>
+            </details>
+            <details>
+                <summary>Which banks are supported?</summary>
+                <p class="faq-a">American Express, Chase, Citi, Capital One, Discover, Bank of America, and US Bank, plus Rakuten as a cashback portal for stacking. Banks redesign their sites from time to time; if a sync stops working, please email support.</p>
+            </details>
+            <details>
+                <summary>Will it slow down my browser?</summary>
+                <p class="faq-a">No. There's no background polling and no heavy processing. On shopping sites it does a quick check against the offers saved on your device after the page has loaded.</p>
+            </details>
+            <details>
+                <summary>Who makes this?</summary>
+                <p class="faq-a">An independent developer, as a side project. It isn't affiliated with any bank. The code is open source on <a href="https://github.com/akshaygupta26/reward-maximizer">GitHub</a>, where you can read it, report issues, or contribute.</p>
+            </details>
+            <details>
+                <summary>How do I get support?</summary>
+                <p class="faq-a">Email <a href="mailto:rewardmaximizer@gmail.com">rewardmaximizer@gmail.com</a>.</p>
+            </details>
+        </div>
+    </div>
+</section>
+
+<!-- 9. Final CTA -->
+<section class="section" aria-labelledby="cta-h">
+    <div class="wrap">
+        <div class="cta">
+            <h2 id="cta-h">Your offers are already waiting.</h2>
+            <p>Find out which card to use while you shop, not after. Free forever, no account, and your data stays on your device.</p>
+            <a class="btn btn-light" href="https://chromewebstore.google.com/detail/reward-maximizer/kimcpncokhjhcpandohmnkbjoagopkip">Add to Chrome — it's free</a>
+        </div>
+    </div>
+</section>
+
+</main>
+
+<footer class="footer">
+    <div class="wrap">
+        <div class="footer-top">
+            <a class="brand" href="#top"><span class="logo" aria-hidden="true"></span>Reward Maximizer</a>
+            <ul class="footer-links">
+                <li><a href="privacy.html">Privacy Policy</a></li>
+                <li><a href="terms.html">Terms of Service</a></li>
+                <li><a href="https://github.com/akshaygupta26/reward-maximizer">GitHub</a></li>
+                <li><a href="mailto:rewardmaximizer@gmail.com">Contact Support</a></li>
+            </ul>
+        </div>
+        <p class="copy">© 2026 Reward Maximizer. An independent side project.</p>
+        <p class="disclaimer">Reward Maximizer is not affiliated with or endorsed by American Express, Chase, Citi, Capital One, Discover, Bank of America, US Bank, or Rakuten. All trademarks belong to their respective owners.</p>
+    </div>
+</footer>
+
 </body>
 </html>
