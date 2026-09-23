@@ -133,7 +133,7 @@ Reward Maximizer/
 
 ## 📝 License
 
-Private/Proprietary
+MIT — see [LICENSE](LICENSE).
 
 ---
 
