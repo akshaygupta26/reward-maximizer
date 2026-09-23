@@ -190,7 +190,7 @@ Each scraper implements: `source`, `offersUrl`, `needsNavigation()`, `scrape()`,
 
 ---
 
-**Last Updated:** 2026-09-22
+**Last Updated:** 2026-09-23
 
 ### TODO (Next Session)
 - **Live Chase API discovery testing** — Log into Chase, trigger sync, watch console for `[RMX-Chase]` Phase 1/2/3 logs. Verify: interceptor ready → discovery captures activation API → replay activates remaining offers. If discovery fails, confirm fallback click-and-navigate works at ~1s/offer.
@@ -202,6 +202,9 @@ Each scraper implements: `source`, `offersUrl`, `needsNavigation()`, `scrape()`,
 - **Chase post-opt-in auto-populate** — After opt-in completes, offers should auto-save without requiring a second manual sync.
 
 ### Recent Updates
+- **Landing page rebuild for v2.3.0 launch (2026-09-23, hema/landing-page):**
+  - Rebuilt `website/index.html` as the marketing landing page for the v2.3.0 Chrome Web Store launch. Sections: hero with live-store CTA, supported bank/portal strip (7 banks + Rakuten), three-step how-it-works, six-feature grid, privacy-by-architecture section with per-permission explanations (`storage`, `tabs`, `notifications`, `alarms`, site access), honest monetization disclosure (labeled Rakuten referral links, optional Buy Me a Coffee), v2.3.0 changelog, FAQ, final CTA.
+  - Fully self-contained single HTML file: no JavaScript, web fonts, external CSS/images, analytics, or trackers. Includes a CSS-only illustrative mock of the merchant alert with a labeled referral disclosure. Links: `privacy.html`, `terms.html`, GitHub, Chrome Web Store listing.
 - **Bug-squash pass #1 (2026-09-22, hema/bug-squash-1):**
   - Fixed null-merchant crash: one malformed offer (missing `merchant`) used to throw inside `Array.filter` and kill all matching. Guards added in `merchant-banner.js` (`checkForOffers`), `service-worker.js` (`saveOffersToStorage` drops them with a warn, `checkStackingOpportunities`, `checkMerchantOffers`).
   - Fixed stacking-only banner: when only cashback-portal offers match (no card offer), the banner title was empty. Now leads with "Earn $X cashback via Rakuten".
