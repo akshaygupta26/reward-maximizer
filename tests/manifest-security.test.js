@@ -59,4 +59,27 @@ describe('manifest and UI security boundaries', () => {
     expect(settings).toContain('${esc(program.name)}');
     expect(settings).toContain('${esc(card.name)}');
   });
+
+  test('has no inline scripts in extension pages (MV3 CSP blocks them)', () => {
+    // Regression (browser test 2026-10-02): settings.html carried an inline
+    // <script> wiring the Buy Me a Coffee href; Chrome blocked it under
+    // script-src 'self', leaving the button dead. Any future inline script
+    // in an extension page will silently not run, so forbid the pattern.
+    const fs2 = require('fs');
+    const path2 = require('path');
+    const pages = ['popup/popup.html', 'settings/settings.html', 'onboarding/welcome.html'];
+    for (const page of pages) {
+      const html = fs2.readFileSync(path2.join(__dirname, '..', page), 'utf8');
+      const scriptTags = html.match(/<script\b[^>]*>/gi) || [];
+      for (const tag of scriptTags) {
+        expect(tag).toMatch(/src\s*=/i);
+      }
+    }
+  });
+
+  test('wires the settings Buy Me a Coffee link from settings.js', () => {
+    const settings = fs.readFileSync(path.join(root, 'settings/settings.js'), 'utf8');
+    expect(settings).toContain("getElementById('settingsBmacLink')");
+    expect(settings).toContain('BMAC_URL');
+  });
 });

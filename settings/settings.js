@@ -19,6 +19,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   renderStats();
   setupEventListeners();
 
+  // Wire the Buy Me a Coffee link here: this used to be an inline <script>
+  // in settings.html, which MV3 CSP (script-src 'self') blocks, leaving the
+  // button with an empty href. Caught by headless-Chromium browser test 2026-10-02.
+  const bmacLink = document.getElementById('settingsBmacLink');
+  if (bmacLink && typeof BMAC_URL !== 'undefined') bmacLink.href = BMAC_URL;
+
   // Load settings from storage
   async function loadSettings() {
     settings = await Storage.getSettings();
