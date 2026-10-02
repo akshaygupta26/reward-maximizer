@@ -247,15 +247,43 @@ async function hybridExtract(site) {
           }
 
           let added = 0;
+          let activationUnavailable = false;
           if (typeof interceptor.activateAll === 'function') {
             added = await interceptor.activateAll(cached.offers);
+            if (added === -1) {
+              // Stub interceptors (Citi, Capital One, Discover, BofA, US Bank)
+              // have no discovered activation endpoint yet. Don't report a
+              // silent 0: record the fallback so health tracks it, and tell
+              // the popup so the user knows to activate on the portal.
+              activationUnavailable = true;
+              added = 0;
+              debug.warn(`[RMX-Orchestrator] Auto-opt-in unavailable for ${site}; offers saved, activation must happen on the portal`);
+              if (typeof InterceptorHealth !== 'undefined') {
+                await InterceptorHealth.recordFallback(site, 'activation_unimplemented');
+              }
+            } else if (added > 0) {
+              // Post-opt-in auto-populate: mark freshly activated offers as
+              // active so the dashboard reflects enrollment without needing
+              // a second manual sync to re-scrape statuses. Only mark when
+              // every pending offer was activated (activateAll does not
+              // report which individual offers succeeded on partial runs).
+              const pending = cached.offers.filter(o => o && o.status &&
+                !['ACTIVATED', 'active', 'enrolled'].includes(o.status));
+              if (pending.length > 0 && added >= pending.length) {
+                const now = new Date().toISOString();
+                cached.offers = cached.offers.map(o => (o && pending.includes(o))
+                  ? { ...o, status: 'active', optedInAt: now }
+                  : o);
+              }
+            }
           }
 
           return {
             offers: cached.offers,
             added,
             totalFound: cached.offers.length,
-            method: 'interceptor'
+            method: 'interceptor',
+            activationUnavailable
           };
         } else {
           debug.warn(`[RMX-Orchestrator] Interceptor data quality too low for ${site}, falling back`);
@@ -339,7 +367,8 @@ async function handleScrapeRequest(sendResponse) {
       offers: result.offers || [],
       added: result.added || 0,
       totalFound: result.totalFound || result.offers?.length || 0,
-      method: result.method
+      method: result.method,
+      activationUnavailable: result.activationUnavailable === true
     };
 
     sendResponse(response);
@@ -420,7 +449,7 @@ function mergeAndStoreOffers(newOffers, source) {
           source: OfferUtils.normalizeSource(source),
           id: offer.id || `rmx_${Date.now().toString(36)}_${Math.random().toString(36).substr(2, 9)}`,
           optedInAt: offer.optedInAt || new Date().toISOString(),
-          status: 'active'
+          status: offer.status || 'active'
         });
       });
 

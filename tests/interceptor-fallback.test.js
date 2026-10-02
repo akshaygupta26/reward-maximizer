@@ -94,6 +94,22 @@ describe('Interceptor Fallback Integration', () => {
       expect(AmexInterceptor.parseOffers(null, {})).toEqual([]);
       expect(AmexInterceptor.parseOffers({}, {})).toEqual([]);
     });
+
+    test('stub interceptors return the -1 activation-unimplemented sentinel', async () => {
+      jest.resetModules();
+      const stubs = [
+        ['citi', '../content/interceptors/citi-interceptor.js', 'CitiInterceptor'],
+        ['capital-one', '../content/interceptors/capital-one-interceptor.js', 'CapitalOneInterceptor'],
+        ['discover', '../content/interceptors/discover-interceptor.js', 'DiscoverInterceptor'],
+        ['bofa', '../content/interceptors/bofa-interceptor.js', 'BofAInterceptor'],
+        ['usbank', '../content/interceptors/usbank-interceptor.js', 'USBankInterceptor'],
+      ];
+      for (const [, file, name] of stubs) {
+        const mod = require(file);
+        expect(await mod[name].activateAll([{ merchant: 'X' }])).toBe(-1);
+        jest.resetModules();
+      }
+    });
   });
 
   describe('InterceptorHealth tracking', () => {

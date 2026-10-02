@@ -46,4 +46,17 @@ describe('manifest and UI security boundaries', () => {
     expect(settings).toContain("chip.addEventListener('click', async (e) =>");
     expect(settings).toContain('await Storage.setUserCards(userCards)');
   });
+
+  test('ships with DEBUG disabled for the Chrome Web Store', () => {
+    const debugJs = fs.readFileSync(path.join(root, 'lib/debug.js'), 'utf8');
+    expect(debugJs).toContain('const DEBUG = false;');
+    expect(debugJs).not.toContain('const DEBUG = true;');
+  });
+
+  test('escapes static program data in settings', () => {
+    const settings = fs.readFileSync(path.join(root, 'settings/settings.js'), 'utf8');
+    expect(settings).toContain('function esc(value)');
+    expect(settings).toContain('${esc(program.name)}');
+    expect(settings).toContain('${esc(card.name)}');
+  });
 });

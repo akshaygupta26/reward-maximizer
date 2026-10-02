@@ -75,21 +75,21 @@ document.addEventListener('DOMContentLoaded', async () => {
     const programs = CARD_PROGRAMS;
 
     cardGrid.innerHTML = Object.entries(programs).map(([key, program]) => `
-      <div class="card-item" data-program="${key}">
+      <div class="card-item" data-program="${esc(key)}">
         <div class="card-item-header">
-          <div class="card-item-logo" style="background: ${program.color}">
-            ${program.shortName.substring(0, 2)}
+          <div class="card-item-logo" style="background: ${esc(program.color)}">
+            ${esc(program.shortName.substring(0, 2))}
           </div>
           <div class="card-item-info">
-            <h3>${program.name}</h3>
+            <h3>${esc(program.name)}</h3>
             <p>${program.cards.length} cards</p>
           </div>
         </div>
         <div class="card-item-cards">
           ${program.cards.map(card => `
             <span class="card-chip ${userCards.includes(card.id) ? 'selected' : ''}"
-                  data-card-id="${card.id}">
-              ${card.name}
+                  data-card-id="${esc(card.id)}">
+              ${esc(card.name)}
             </span>
           `).join('')}
         </div>
@@ -146,12 +146,12 @@ document.addEventListener('DOMContentLoaded', async () => {
       .map(([program, cards]) => `
         <div class="valuation-group">
           <h3 class="valuation-group-header">
-            ${formatProgramName(program)}
+            ${esc(formatProgramName(program))}
           </h3>
           ${cards.map(card => `
             <div class="valuation-item">
               <div>
-                <label>${card.name}</label>
+                <label>${esc(card.name)}</label>
                 <span>Default: ${card.defaultValue}cpp</span>
               </div>
               <div class="valuation-input">
@@ -299,6 +299,14 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   // Helpers
+  function esc(value) {
+    return typeof OfferUtils !== 'undefined'
+      ? OfferUtils.escapeHtml(value)
+      : String(value ?? '').replace(/[&<>"']/g, c => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+      }[c]));
+  }
+
   function formatCardName(id) {
     const names = {
       'chase-ur-csr': 'Sapphire Reserve',

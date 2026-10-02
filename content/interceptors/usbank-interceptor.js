@@ -160,7 +160,7 @@ const USBankInterceptor = {
    */
   async activateAll(offers) {
     debug.log('[RMX-Interceptor-USBank] API activation not yet implemented, deferring to DOM scraper');
-    return 0;
+    return -1; // sentinel: activation unimplemented (see content-main.js)
   }
 };
 
