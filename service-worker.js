@@ -263,8 +263,20 @@ async function getOffersFromStorage() {
   return OfferUtils.normalizeOfferRecords(result.rmx_offers);
 }
 
-// Save offers to storage
-async function saveOffersToStorage(newOffers, source, tabId) {
+// Save offers to storage (serialized: concurrent save_offers messages from
+// multiple portal tabs must not interleave read->merge->write and clobber
+// each other's offers)
+let _saveQueue = Promise.resolve();
+function saveOffersToStorage(newOffers, source, tabId) {
+  const run = _saveQueue.then(
+    () => _saveOffersToStorageImpl(newOffers, source, tabId),
+    () => _saveOffersToStorageImpl(newOffers, source, tabId)
+  );
+  _saveQueue = run.then(() => undefined, () => undefined);
+  return run;
+}
+
+async function _saveOffersToStorageImpl(newOffers, source, tabId) {
   const normalizedSource = OfferUtils.normalizeSource(source);
   if (!Array.isArray(newOffers) || !normalizedSource) {
     debug.warn('[RMX-SW] Refusing invalid offer batch or source:', source);
@@ -296,7 +308,7 @@ async function saveOffersToStorage(newOffers, source, tabId) {
       source: normalizedSource,
       id: offer.id || generateId(),
       optedInAt: offer.optedInAt || new Date().toISOString(),
-      status: 'active'
+      status: offer.status || 'active'
     };
 
     if (existingMap.has(key)) {
@@ -428,30 +440,52 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
 });
 
 // Check if we have offers for a merchant
+// Multi-part public suffixes: merchant label is the part before these
+// (www.aldo.co.uk -> "aldo", not "co"). Mirrors merchant-banner.js.
+const MULTI_PART_SUFFIXES = new Set([
+  'co.uk', 'org.uk', 'ac.uk', 'gov.uk',
+  'com.au', 'net.au', 'org.au',
+  'co.in', 'com.in', 'net.in',
+  'com.br', 'com.mx', 'com.ar', 'com.co',
+  'co.jp', 'com.cn', 'com.tw', 'com.sg', 'com.hk', 'co.nz', 'co.za'
+]);
+
+function extractMerchantLabel(hostname) {
+  const parts = String(hostname || '').toLowerCase().replace(/^www\./, '').split('.').filter(Boolean);
+  if (parts.length === 0) return '';
+  if (parts.length >= 2 && MULTI_PART_SUFFIXES.has(parts.slice(-2).join('.'))) {
+    return parts.length >= 3 ? parts[parts.length - 3] : parts[0];
+  }
+  return parts.length >= 3 ? parts[parts.length - 2] : parts[0];
+}
+
+// Token-aware matching (mirrors merchant-banner.js): exact normalized match,
+// or site label equals a merchant token / all tokens concatenated. Avoids
+// substring false positives like "Target" on targetprocess.com.
+function merchantMatchesSite(offerMerchant, merchantName, normalizedSite) {
+  const offerName = OfferUtils.normalizeMerchant(offerMerchant);
+  if (!offerName || !merchantName) return false;
+  const site = normalizedSite || merchantName.replace(/[^a-z0-9]/g, '');
+  const normalizedOffer = offerName.replace(/[^a-z0-9]/g, '');
+  if (!site || !normalizedOffer) return false;
+  if (normalizedOffer === site) return true;
+  if (site.length >= 3 && normalizedOffer.length >= 3) {
+    const tokens = offerName.split(/[^a-z0-9]+/).filter(t => t.length >= 2);
+    if (tokens.includes(site)) return true;
+    if (tokens.length > 1 && tokens.join('') === site) return true;
+  }
+  return false;
+}
+
 async function checkMerchantOffers(hostname, tabId, checkId) {
   const offers = await getOffersFromStorage();
   if (checkId !== undefined && merchantBadgeChecks.get(tabId) !== checkId) return;
 
-  // Same merchant-name extraction as merchant-banner.js: for subdomains like
-  // shop.lululemon.com use the second-to-last part ("lululemon")
-  const parts = hostname.replace(/^www\./, '').split('.');
-  const merchantName = parts.length >= 3 ? parts[parts.length - 2] : parts[0];
+  // Same merchant-name extraction as merchant-banner.js, incl. multi-part TLDs
+  const merchantName = extractMerchantLabel(hostname);
   const normalizedSite = merchantName.replace(/[^a-z0-9]/g, '');
 
-  const matchingOffers = offers.filter(o => {
-    const offerMerchant = OfferUtils.normalizeMerchant(o.merchant);
-    const normalizedOffer = offerMerchant.replace(/[^a-z0-9]/g, '');
-
-    // Exact match after normalization (always allowed)
-    if (normalizedOffer === normalizedSite) return true;
-
-    // Substring matching only when both sides are 3+ chars (mirrors banner,
-    // avoids false positives like "x" matching "Expedia")
-    if (normalizedSite.length >= 3 && normalizedOffer.length >= 3) {
-      return offerMerchant.includes(merchantName) || merchantName.includes(offerMerchant);
-    }
-    return false;
-  });
+  const matchingOffers = offers.filter(o => merchantMatchesSite(o.merchant, merchantName, normalizedSite));
 
   if (matchingOffers.length > 0) {
     // Show badge indicator

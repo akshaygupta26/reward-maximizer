@@ -160,7 +160,7 @@ const DiscoverInterceptor = {
    */
   async activateAll(offers) {
     debug.log('[RMX-Interceptor-Discover] API activation not yet implemented, deferring to DOM scraper');
-    return 0;
+    return -1; // sentinel: activation unimplemented (see content-main.js)
   }
 };
 

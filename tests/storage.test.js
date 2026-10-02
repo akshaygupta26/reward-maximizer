@@ -168,6 +168,17 @@ describe('Storage', () => {
       await expect(Storage.saveOffers([{ merchant: 'Adidas', value: '3%' }], 'chase'))
         .resolves.toMatchObject({ added: 1, total: 2 });
     });
+
+    test('concurrent saveOffers calls do not clobber each other', async () => {
+      const [a, b] = await Promise.all([
+        Storage.saveOffers([{ merchant: 'Nike', value: '5%' }], 'amex'),
+        Storage.saveOffers([{ merchant: 'Adidas', value: '3%' }], 'chase')
+      ]);
+      expect(a.added + b.added).toBe(2);
+      const offers = await Storage.getOffers();
+      expect(offers).toHaveLength(2);
+      expect(offers.map(o => o.merchant).sort()).toEqual(['Adidas', 'Nike']);
+    });
   });
 
   describe('card and portal selections', () => {

@@ -19,6 +19,49 @@ function dismissSite() {
   catch (e) { /* private browsing may block sessionStorage */ }
 }
 
+// Multi-part public suffixes: the merchant label is the part before these,
+// e.g. www.aldo.co.uk -> "aldo" (not "co"), shop.nike.com.au -> "nike"
+const MULTI_PART_SUFFIXES = new Set([
+  'co.uk', 'org.uk', 'ac.uk', 'gov.uk',
+  'com.au', 'net.au', 'org.au',
+  'co.in', 'com.in', 'net.in',
+  'com.br', 'com.mx', 'com.ar', 'com.co',
+  'co.jp', 'com.cn', 'com.tw', 'com.sg', 'com.hk', 'co.nz', 'co.za'
+]);
+
+function extractMerchantLabel(hostname) {
+  const parts = String(hostname || '').toLowerCase().replace(/^www\./, '').split('.').filter(Boolean);
+  if (parts.length === 0) return '';
+  if (parts.length >= 2 && MULTI_PART_SUFFIXES.has(parts.slice(-2).join('.'))) {
+    return parts.length >= 3 ? parts[parts.length - 3] : parts[0];
+  }
+  return parts.length >= 3 ? parts[parts.length - 2] : parts[0];
+}
+
+// Token-aware merchant matching: exact normalized match, or the site label
+// equals a single merchant token or all merchant tokens concatenated
+// ("Aldo Shoes" -> aldoshoes.com, "Best Buy" -> bestbuy.com). This avoids
+// substring false positives like "Target" matching targetprocess.com or
+// "Nike" matching nikecorp.com, which the old includes() check allowed.
+function merchantMatchesSite(offerMerchant, merchantName, normalizedSite) {
+  const offerName = String(offerMerchant || '').trim().toLowerCase();
+  if (!offerName || !merchantName) return false;
+  const site = normalizedSite || merchantName.replace(/[^a-z0-9]/g, '');
+  const normalizedOffer = offerName.replace(/[^a-z0-9]/g, '');
+  if (!site || !normalizedOffer) return false;
+
+  // Exact match after normalization (always allowed, any length)
+  if (normalizedOffer === site) return true;
+
+  // Token matches require 3+ chars to avoid "x" matching "Expedia" etc.
+  if (site.length >= 3 && normalizedOffer.length >= 3) {
+    const tokens = offerName.split(/[^a-z0-9]+/).filter(t => t.length >= 2);
+    if (tokens.includes(site)) return true;
+    if (tokens.length > 1 && tokens.join('') === site) return true;
+  }
+  return false;
+}
+
 // Initialize banner on page load
 async function init() {
   // Don't show banner on credit card portal sites
@@ -58,11 +101,9 @@ async function checkForOffers() {
     }
 
     // Extract merchant name from hostname, handling subdomains like shop.lululemon.com
+    // and multi-part TLDs like www.aldo.co.uk (merchant label is "aldo", not "co")
     const hostname = window.location.hostname.toLowerCase();
-    const parts = hostname.replace(/^www\./, '').split('.');
-    // Use second-to-last part (domain name) if there are 3+ parts (subdomain.domain.tld)
-    // Otherwise use the first part (domain.tld)
-    const merchantName = parts.length >= 3 ? parts[parts.length - 2] : parts[0];
+    const merchantName = extractMerchantLabel(hostname);
 
     debug.log('[RMX-Banner] Checking for offers matching:', merchantName);
 
@@ -73,20 +114,7 @@ async function checkForOffers() {
     currentOffers = allOffers.filter(offer => {
       if (typeof OfferUtils !== 'undefined' && !OfferUtils.isValidOffer(offer)) return false;
       if (!offer || typeof offer.merchant !== 'string' || !offer.merchant.trim()) return false;
-      const offerMerchant = offer.merchant.trim().toLowerCase();
-      const normalizedOffer = offerMerchant.replace(/[^a-z0-9]/g, '');
-
-      // Exact match after normalization (always allowed)
-      if (normalizedOffer === normalizedSite) return true;
-
-      // Substring matching only when both sides are 3+ chars
-      if (normalizedSite.length >= 3 && normalizedOffer.length >= 3) {
-        if (offerMerchant.includes(merchantName) || merchantName.includes(offerMerchant)) {
-          return true;
-        }
-      }
-
-      return false;
+      return merchantMatchesSite(offer.merchant, merchantName, normalizedSite);
     });
 
     if (currentOffers.length > 0) {

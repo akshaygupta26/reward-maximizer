@@ -77,5 +77,11 @@ describe('ExtractorConfig', () => {
         expect(delay).toBeLessThanOrEqual(1300);
       }
     });
+
+    test('accepts a pinned RNG for deterministic tests', () => {
+      expect(ExtractorConfig.getRandomizedDelay(() => 0)).toBe(700);
+      expect(ExtractorConfig.getRandomizedDelay(() => 0.5)).toBe(1000);
+      expect(ExtractorConfig.getRandomizedDelay(() => 1)).toBe(1300);
+    });
   });
 });

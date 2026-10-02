@@ -10,7 +10,7 @@
 
 **Reward Maximizer** is a Chrome extension (Manifest v3) that helps users maximize credit card rewards by syncing, comparing, and stacking offers across multiple credit card portals and cashback platforms.
 
-**Version:** 2.3.0 | **Tech Stack:** Vanilla JS, Chrome Extension APIs, Chrome Storage API
+**Version:** 2.4.0 | **Tech Stack:** Vanilla JS, Chrome Extension APIs, Chrome Storage API
 
 **Core Features:** Scrapes offers from 7 bank portals (Amex, Chase, Citi, Capital One, Discover, BofA, US Bank) + 3 cashback platforms (Rakuten, Capital One Shopping, TopCashback). Compares values using point valuations, identifies stacking opportunities, shows merchant banners, and provides a centralized dashboard. Includes Rakuten referral links and Buy Me a Coffee tip jar for monetization.
 
@@ -93,14 +93,10 @@ Reward Maximizer/
 ## Key Implementation Details
 
 ### Merchant Name Matching
-```javascript
-// merchant-banner.js — fuzzy matching
-const merchantName = hostname.replace('www.', '').split('.')[0]; // "aldo" from "www.aldo.com"
-offerMerchant.includes(merchantName) ||
-merchantName.includes(offerMerchant) ||
-offerMerchant.replace(/[^a-z0-9]/g, '') === merchantName.replace(/[^a-z0-9]/g, '')
-```
-**Known limitations:** May miss "Aldo Shoes" vs "Aldo"; substring matching can cause false positives ("Target" matches "targetprocess.com"). Malformed offers with empty merchants are discarded before matching.
+Token-aware matching in `merchant-banner.js`, mirrored in `service-worker.js` (`checkMerchantOffers`) and `popup.js` (`detectCurrentMerchant`):
+- Extract the merchant label with `extractMerchantLabel(hostname)`: second-to-last part for subdomains (`shop.lululemon.com` → `lululemon`), and the label before multi-part suffixes (`www.aldo.co.uk` → `aldo`, `shop.nike.com.au` → `nike`).
+- Match if normalized offer == site label, or the site label equals a merchant token or all merchant tokens concatenated (`Aldo Shoes` → aldoshoes.com, `Best Buy` → bestbuy.com).
+**Known limitations:** May miss name variations where the domain concatenates only part of the merchant name. Substring false positives are fixed: "Target" no longer matches targetprocess.com. Malformed offers with empty merchants are discarded before matching.
 
 ### Stacking Logic
 - **Card offers** (cannot stack with each other): amex, chase, citi, capital-one, discover, bofa, usbank
@@ -163,10 +159,7 @@ Each scraper implements: `source`, `offersUrl`, `needsNavigation()`, `scrape()`,
 
 ## Testing
 
-**Unit tests:** 234 tests across 15 suites (Jest) — `npm test` (all passing)
-- `tests/valuation.test.js` (28), `tests/categories.test.js` (16), `tests/storage.test.js` (15), `tests/merchant-matching.test.js` (18)
-- `tests/extractor-config.test.js` (11), `tests/base-interceptor.test.js` (15), `tests/interceptor-health.test.js` (8)
-- `tests/chase-interceptor.test.js` (10), `tests/amex-interceptor.test.js` (20), `tests/amex-main-bridge.test.js` (5), `tests/interceptor-fallback.test.js` (14)
+**Unit tests:** 243 tests across 15 suites (Jest) — `npm test` (all passing, verified 2026-10-02)
 
 **Manual testing:** See `TESTING_CHECKLIST.md`
 
@@ -194,18 +187,26 @@ Each scraper implements: `source`, `offersUrl`, `needsNavigation()`, `scrape()`,
 
 ---
 
-**Last Updated:** 2026-09-23
+**Last Updated:** 2026-10-02
 
 ### TODO (Next Session)
 - **Live Chase API discovery testing** — Log into Chase, trigger sync, watch console for `[RMX-Chase]` Phase 1/2/3 logs. Verify: interceptor ready → discovery captures activation API → replay activates remaining offers. If discovery fails, confirm fallback click-and-navigate works at ~1s/offer.
 - **Live batch opt-in testing** — Test BatchOptIn on actual Amex portal (requires login). Verify MutationObserver timing, progress reporting, and in-place clicking.
 - **Live scraping tests** — Test scrapers on actual bank portals (requires login). Amex, Chase, Citi, BofA, etc.
 - **Banner dismiss persistence** — ✅ DONE (verified 2026-09-22): dismiss state already uses `sessionStorage` (`rmx_banner_dismissed`), survives SPA nav + page reloads within the tab session; SPA MutationObserver preserves dismiss on URL change.
-- **Live API endpoint discovery (other portals)** — Interceptors use heuristic URL patterns and field names. Log into each portal with `ExtractorConfig.logRawResponses = true` to discover actual API shapes.
+- **Live API endpoint discovery (other portals)** — Interceptors use heuristic URL patterns and field names. Log into each portal with `ExtractorConfig.logRawResponses = true` to discover actual API shapes. Until then, Citi/Capital One/Discover/BofA/US Bank `activateAll()` returns the `-1` sentinel: sync saves offers, records `activation_unimplemented` health fallback, and the popup tells the user to activate on the portal.
 - **Amex multi-card activation** — ✅ DONE (2026-09-23): `AmexInterceptor.activateAll()` discovers the activation request from one real DOM click via the new MAIN-world bridge and replays it per (offer, card); DOM BatchOptIn fallback. Needs a live Amex login to confirm the real endpoint shape.
-- **Chase post-opt-in auto-populate** — After opt-in completes, offers should auto-save without requiring a second manual sync.
+- **Chase post-opt-in auto-populate** — ✅ DONE (2026-10-02, v2.4.0): after a fully successful `activateAll`, `content-main.js` marks pending offers `status:'active'` with a fresh `optedInAt` before the popup persists them, so no second manual sync is needed to reflect enrollment. Partial activations (added < pending count) are left unmarked rather than guessed.
 
 ### Recent Updates
+- **Bug-squash pass #3 + v2.4.0 prep (2026-10-02, hema/bug-squash-3, based on hema/amex-multicard):**
+  - **P0:** `DEBUG = false` in `lib/debug.js` (was `true`, contradicting the CWS submission checklist); new Jest guard in `manifest-security.test.js` fails if it flips back.
+  - **Merchant matching:** token-aware matching + multi-part TLD handling (`co.uk`, `com.au`, …) in banner, service worker, and popup. "Target" no longer matches targetprocess.com, "Nike" no longer matches nikecorp.com, and `www.aldo.co.uk` now correctly resolves to "aldo". Tests updated (the two old tests documenting the false positives now assert the fixed behavior) + 4 new multi-part-TLD cases.
+  - **Activation honesty:** stub `activateAll()` in Citi/Capital One/Discover/BofA/US Bank interceptors now returns `-1`; `content-main.js` records an `activation_unimplemented` health fallback and the popup says "auto-opt-in unavailable — activate on the portal" instead of silent success with 0 activated.
+  - **Chase post-opt-in auto-populate:** fully successful activations mark pending offers `status:'active'` before persistence; storage layers no longer unconditionally overwrite status with `'active'` (they preserve the offer's real status, defaulting only when absent).
+  - **Storage race:** `Storage.saveOffer/saveOffers/deleteOffer/clearOffersForSource/updateSyncHistory/addPortalLink` are serialized through a promise-chain mutex; service-worker `saveOffersToStorage` is serialized the same way. New concurrency regression test.
+  - **Hardening:** settings page escapes program/card data via `OfferUtils.escapeHtml`; `ExtractorConfig.getRandomizedDelay(randomFn)` accepts an injectable RNG so timing tests can pin the jitter (flaky-test mitigation).
+  - Tests: 243/243 passing across 15 suites (9 new). Version bumped to 2.4.0 (includes the Amex multi-card activation from hema/amex-multicard). **Not published** — CWS submission needs Akshay's explicit approval.
 - **Amex multi-card activation via discovery-based API (2026-09-23, hema/amex-multicard):** New MAIN-world bridge `content/amex-api-interceptor.js` (manifest `"world": "MAIN"` on `https://*.americanexpress.com/*`, channel `rmx-amex-api`) that only does capture + replay: patches fetch/XHR to record POST/PUT/PATCH (plus activation-pattern GETs) while capturing, and replays templates on command. No response observation, beacons, or offer caching. `AmexInterceptor.activateAll()` replaces the skeleton. It builds one task per (offerId, eligible card token), skipping `activated`/`enrolled`. Discovery pings the bridge and captures ONE real DOM activation. It then correlates offerId/cardToken values in the captured URL/body (activation patterns without leading slash, so `CreateCardAccountOfferEnrollment.v1`-style endpoints match), placeholder-substitutes `{OFFER_ID}`/`{CARD_TOKEN}`, and drops hop-by-hop headers. Replay is batched (5/batch, ~500ms pause), and each `replay_request` carries a `requestId` that the bridge echoes, because the same offerId appears once per card in a batch. The discovery click counts as done and is never replayed. If the captured request has no card token, replay collapses to one per offer. If discovery fails, it falls back to DOM `BatchOptIn` (currently-selected card only). Replay URLs are guarded to `https://*.americanexpress.com` before `fetch` is called. Privacy: 100% local, no telemetry or third-party calls, and card tokens/request bodies are never logged (debug logs show counts and the placeholder template path only). All waits are settable via `AmexInterceptor._discoveryTimeouts`. Tests: 234/234 passing across 15 suites (new `tests/amex-main-bridge.test.js`, extended `tests/amex-interceptor.test.js`).
 - **Landing page rebuild for v2.3.0 launch (2026-09-23, hema/landing-page):**
   - Rebuilt `website/index.html` as the marketing landing page for the v2.3.0 Chrome Web Store launch. Sections: hero with live-store CTA, supported bank/portal strip (7 banks + Rakuten), three-step how-it-works, six-feature grid, privacy-by-architecture section with per-permission explanations (`storage`, `tabs`, `notifications`, `alarms`, site access), honest monetization disclosure (labeled Rakuten referral links, optional Buy Me a Coffee), v2.3.0 changelog, FAQ, final CTA.

@@ -131,19 +131,38 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
       }
 
-      // Extract merchant name from hostname, handling subdomains like shop.lululemon.com
-      const parts = hostname.split('.');
-      const merchantName = parts.length >= 3 ? parts[parts.length - 2] : parts[0];
+      // Extract merchant name from hostname, handling subdomains like
+      // shop.lululemon.com and multi-part TLDs like www.aldo.co.uk
+      const multiPartSuffixes = new Set([
+        'co.uk', 'org.uk', 'ac.uk', 'gov.uk', 'com.au', 'net.au', 'org.au',
+        'co.in', 'com.in', 'net.in', 'com.br', 'com.mx', 'com.ar', 'com.co',
+        'co.jp', 'com.cn', 'com.tw', 'com.sg', 'com.hk', 'co.nz', 'co.za'
+      ]);
+      const hostParts = hostname.split('.').filter(Boolean);
+      let merchantName;
+      if (hostParts.length >= 2 && multiPartSuffixes.has(hostParts.slice(-2).join('.'))) {
+        merchantName = hostParts.length >= 3 ? hostParts[hostParts.length - 3] : hostParts[0];
+      } else {
+        merchantName = hostParts.length >= 3 ? hostParts[hostParts.length - 2] : hostParts[0];
+      }
       debug.log('[RMX-Popup] Checking for offers matching:', merchantName);
 
-      // Find matching offers using fuzzy matching
+      // Find matching offers using token-aware matching (mirrors banner/SW):
+      // exact normalized match, or site label equals a merchant token or all
+      // tokens concatenated — avoids "Target" matching targetprocess.com
+      const normalizedSite = merchantName.replace(/[^a-z0-9]/g, '');
       const matchingOffers = offers.filter(offer => {
         if (!OfferUtils.isValidOffer(offer)) return false;
-        const offerMerchant = offer.merchant.toLowerCase();
-        const match = offerMerchant.includes(merchantName) ||
-                      merchantName.includes(offerMerchant) ||
-                      offerMerchant.replace(/[^a-z0-9]/g, '') === merchantName.replace(/[^a-z0-9]/g, '');
-        return match;
+        const offerName = offer.merchant.trim().toLowerCase();
+        const normalizedOffer = offerName.replace(/[^a-z0-9]/g, '');
+        if (!normalizedSite || !normalizedOffer) return false;
+        if (normalizedOffer === normalizedSite) return true;
+        if (normalizedSite.length >= 3 && normalizedOffer.length >= 3) {
+          const tokens = offerName.split(/[^a-z0-9]+/).filter(t => t.length >= 2);
+          if (tokens.includes(normalizedSite)) return true;
+          if (tokens.length > 1 && tokens.join('') === normalizedSite) return true;
+        }
+        return false;
       });
 
       if (matchingOffers.length > 0) {
@@ -542,7 +561,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         applyFilters();
         render();
 
-        updateStatus(`Synced ${response.offers.length} offers (${result.added} new)`, 'success');
+        updateStatus(response.activationUnavailable
+          ? `Synced ${response.offers.length} offers (${result.added} new) — auto-opt-in unavailable for ${source}, activate on the portal`
+          : `Synced ${response.offers.length} offers (${result.added} new)`, 'success');
       } else {
         debug.log('[RMX-Popup] No offers received from scraper. Response:', response);
 

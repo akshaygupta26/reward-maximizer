@@ -2,27 +2,47 @@
 // Extracted here since the banner script runs in browser context
 
 /**
- * Merchant matching logic from merchant-banner.js
- * Updated: requires 3+ char minimum for substring matching to avoid
- * false positives like "x" matching "Expedia"
+ * Merchant matching logic from merchant-banner.js (mirrored in
+ * service-worker.js checkMerchantOffers and popup detectCurrentMerchant)
+ * Updated: token-aware matching + multi-part TLD handling.
+ * - exact normalized match always allowed
+ * - site label must equal a merchant token or all tokens concatenated
+ *   ("Aldo Shoes" -> aldoshoes.com), so "Target" no longer matches
+ *   targetprocess.com and "Nike" no longer matches nikecorp.com
+ * - multi-part suffixes (co.uk, com.au, ...) resolve to the label before them
  */
-function matchesMerchant(offerMerchant, hostname) {
-  // Extract domain name, handling subdomains like shop.lululemon.com
-  const parts = hostname.replace(/^www\./, '').toLowerCase().split('.');
-  const merchantName = parts.length >= 3 ? parts[parts.length - 2] : parts[0];
-  const offerName = offerMerchant.toLowerCase();
+const MULTI_PART_SUFFIXES = new Set([
+  'co.uk', 'org.uk', 'ac.uk', 'gov.uk',
+  'com.au', 'net.au', 'org.au',
+  'co.in', 'com.in', 'net.in',
+  'com.br', 'com.mx', 'com.ar', 'com.co',
+  'co.jp', 'com.cn', 'com.tw', 'com.sg', 'com.hk', 'co.nz', 'co.za'
+]);
 
+function extractMerchantLabel(hostname) {
+  const parts = String(hostname || '').toLowerCase().replace(/^www\./, '').split('.').filter(Boolean);
+  if (parts.length === 0) return '';
+  if (parts.length >= 2 && MULTI_PART_SUFFIXES.has(parts.slice(-2).join('.'))) {
+    return parts.length >= 3 ? parts[parts.length - 3] : parts[0];
+  }
+  return parts.length >= 3 ? parts[parts.length - 2] : parts[0];
+}
+
+function matchesMerchant(offerMerchant, hostname) {
+  const merchantName = extractMerchantLabel(hostname);
+  const offerName = String(offerMerchant || '').toLowerCase();
   const normalizedSite = merchantName.replace(/[^a-z0-9]/g, '');
   const normalizedOffer = offerName.replace(/[^a-z0-9]/g, '');
+  if (!normalizedSite || !normalizedOffer) return false;
 
   // Exact match after normalization (always allowed)
   if (normalizedOffer === normalizedSite) return true;
 
-  // Substring matching only when both sides are 3+ chars
+  // Token matching only when both sides are 3+ chars
   if (normalizedSite.length >= 3 && normalizedOffer.length >= 3) {
-    if (offerName.includes(merchantName) || merchantName.includes(offerName)) {
-      return true;
-    }
+    const tokens = offerName.split(/[^a-z0-9]+/).filter(t => t.length >= 2);
+    if (tokens.includes(normalizedSite)) return true;
+    if (tokens.length > 1 && tokens.join('') === normalizedSite) return true;
   }
 
   return false;
@@ -70,15 +90,13 @@ describe('Merchant Matching', () => {
 
   describe('non-matches', () => {
     test('"Target" does not match targetprocess.com', () => {
-      // "target" is included in "targetprocess" — this is actually a known limitation
-      // The current logic WILL match this (false positive)
-      // Documenting the actual behavior:
-      expect(matchesMerchant('Target', 'www.targetprocess.com')).toBe(true);
+      // Fixed 2026-10-02: token-aware matching requires the site label to
+      // equal a merchant token (or all tokens joined), not just contain it
+      expect(matchesMerchant('Target', 'www.targetprocess.com')).toBe(false);
     });
 
     test('"Nike" does not match nikecorp.com', () => {
-      // substring match: "nike" is in "nikecorp" — also a known false positive
-      expect(matchesMerchant('Nike', 'www.nikecorp.com')).toBe(true);
+      expect(matchesMerchant('Nike', 'www.nikecorp.com')).toBe(false);
     });
 
     test('"Walmart" does not match walgreens.com', () => {
@@ -117,6 +135,24 @@ describe('Merchant Matching', () => {
 
     test('"Nike" matches store.nike.com', () => {
       expect(matchesMerchant('Nike', 'store.nike.com')).toBe(true);
+    });
+  });
+
+  describe('multi-part TLD handling', () => {
+    test('"Aldo" matches www.aldo.co.uk', () => {
+      expect(matchesMerchant('Aldo', 'www.aldo.co.uk')).toBe(true);
+    });
+
+    test('"Aldo" matches aldo.co.uk without www', () => {
+      expect(matchesMerchant('Aldo', 'aldo.co.uk')).toBe(true);
+    });
+
+    test('"Nike" matches shop.nike.com.au', () => {
+      expect(matchesMerchant('Nike', 'shop.nike.com.au')).toBe(true);
+    });
+
+    test('"Target" does not match targetprocess.co.uk', () => {
+      expect(matchesMerchant('Target', 'www.targetprocess.co.uk')).toBe(false);
     });
   });
 
